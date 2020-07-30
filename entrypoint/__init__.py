@@ -5,6 +5,9 @@ from functools import partial
 __version__ = '0.1.0'
 
 
+_REGISTRY = {}
+
+
 def _invoke_wrapper(invoke, func, parser, command_line=None):
     return invoke(func, vars(parser.parse_args(command_line)))
 
@@ -36,6 +39,7 @@ def _setup_entrypoint(invoker, description, name, param_specs, func):
     # and for testing purposes.
     func.entrypoint_name = name
     func.entrypoint_desc = desc
+    _REGISTRY[func.entrypoint_name] = f'{func.__module__}:{func.__name__}.invoke'
     return func
 
 
