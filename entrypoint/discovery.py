@@ -1,22 +1,6 @@
 import importlib, os
-
-
-def _module_entrypoints(qualname, module):
-    with open(module.__file__) as f:
-        deffed = [
-            line[4:].partition('(')[0] for line in f if line.startswith('def')
-        ]
-    for symbol in deffed:
-        thing = getattr(module, symbol)
-        assert callable(thing)
-        try:
-            # Ensure all three attributes are present, but only use the name.
-            entrypoint_name, _, _ = (
-                thing.entrypoint_name, thing.entrypoint_desc, thing.invoke
-            )
-            yield (entrypoint_name, f'{qualname}:{symbol}.invoke')
-        except AttributeError:
-            continue
+import toml
+from . import main
 
 
 def is_module_or_package(path, name, ignore):
@@ -27,13 +11,28 @@ def is_module_or_package(path, name, ignore):
         return name if ext == '.py' else None
 
 
-def discover_entrypoints(qualname, ignore=('__pycache__',)):
+def _load_everything(qualname, ignore):
     module_or_package = importlib.import_module(qualname)
-    if not hasattr(module_or_package, '__path__'):
-        yield from _module_entrypoints(qualname, module_or_package)
-        return
-    for path in module_or_package.__path__:
-        for name in os.listdir(path):
-            fixed_name = is_module_or_package(path, name, ignore)
-            if fixed_name is not None:
-                yield from discover_entrypoints(f'{qualname}.{fixed_name}')
+    if hasattr(module_or_package, '__path__'):
+        for path in module_or_package.__path__:
+            for name in os.listdir(path):
+                fixed_name = is_module_or_package(path, name, ignore)
+                if fixed_name is not None:
+                    _load_everything(f'{qualname}.{fixed_name}', ignore)
+
+
+# This only works properly on a fresh run, where nothing has been cached yet.
+def _discover_entrypoints(qualname, ignore=('__pycache__',)):
+    _load_everything(qualname, ignore)
+    return main._REGISTRY
+
+
+@main.entrypoint(name='entrypoint-update-metadata')
+def write_all():
+    """Discover entry points in all source files and update pyproject.toml."""
+    with open('pyproject.toml') as f:
+        data = toml.load(f)
+    poetry = data['tool']['poetry']
+    poetry['scripts'] = _discover_entrypoints(poetry['name'])
+    with open('pyproject.toml', 'w') as f:
+        toml.dump(data, f)
