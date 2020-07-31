@@ -27,7 +27,9 @@ def _add_argument(parser, name, spec):
 
 def _setup_entrypoint(invoker, description, name, param_specs, func):
     name = name or func.__name__
-    desc = description or (func.__doc__ and func.__doc__.splitlines()[0])
+    desc = description
+    if desc is None: # but allow desc == ''
+        desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
     parser = ArgumentParser(prog=name, description=desc)
     for param_name, param_spec in param_specs.items():
         _add_argument(parser, param_name, param_spec)
