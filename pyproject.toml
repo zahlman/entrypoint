@@ -16,3 +16,4 @@ pytest = "^5.2"
 
 [tool.poetry.scripts]
 entrypoint-update-metadata = "entrypoint.discovery:write_all.invoke"
+entrypoint-wrapper = "entrypoint.discovery:make_wrapper_script.invoke"

@@ -36,3 +36,23 @@ def write_all():
     poetry['scripts'] = _discover_entrypoints(poetry['name'])
     with open('pyproject.toml', 'w') as f:
         toml.dump(data, f)
+
+
+@main.entrypoint(name='entrypoint-wrapper', cmd='name of command to wrap')
+def make_wrapper_script(cmd):
+    """Create a wrapper that runs the specified command locally and pauses."""
+    if os.name == 'nt':
+        template, ext = '@{exe}\n@pause', '.bat'
+    else:
+        # https://stackoverflow.com/questions/24016046/
+        # Needs testing!
+        template = '{exe}\necho "Press any key to continue . . ."\nread -rsn1'
+        ext = ''
+    try:
+        pythonroot = os.environ['VIRTUAL_ENV']
+    except KeyError:
+        print('WARNING: No active virtualenv; using main Python installation.')
+        pythonroot, _ = os.path.split(sys.executable)
+    exe = os.path.join(pythonroot, 'Scripts', cmd)
+    with open(f'{cmd}{ext}', 'w') as f:
+        f.write(template.format(exe=exe))
