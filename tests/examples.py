@@ -67,7 +67,7 @@ def hard(first, *args, x, **kwargs):
 )
 def defaults(first, second='default', third='also default'):
     """A harder test of how command-line args are mapped to parameters."""
-    return first, args, x, kwargs
+    return first, second, third
 
 
 @entrypoint(
