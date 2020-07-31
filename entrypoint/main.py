@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from functools import partial
+from inspect import Parameter, signature, _empty as REQUIRED
 
 
 _REGISTRY = {}
@@ -55,7 +56,52 @@ def make_entrypoint(invoker):
 
 def invoke(func, args):
     """Default invoker."""
-    return func(**args)
+    # Any errors that occur here should be treated as programming errors,
+    # because they indicate that the interface created through the
+    # entrypoint decorator is broken (does not reliably map to the underlying
+    # function's parameters). So we use assertions.
+    positional = []
+    keywords = args.copy()
+    kwarg_name = None
+    seen_kwargs = False
+    explicit_keywords = {}
+    for name, param in signature(func).parameters.items():
+        assert not seen_kwargs # just a sanity check.
+        if param.kind == Parameter.VAR_KEYWORD:
+            seen_kwargs = True # this should be the last one.
+            kwarg_name = name
+            continue
+        if name in keywords:
+            arg = keywords[name]
+            del keywords[name]
+        else:
+            assert param.default != REQUIRED, \
+            f'command-line args missing necessary value for `{name}`'
+            arg = keyword.get(name, param.default)
+        if param.kind == Parameter.VAR_POSITIONAL:
+            try:
+                iter(arg)
+            except TypeError:
+                assert False, \
+                'command-line arg for VAR_POSITIONAL parameter must be iterable'
+            positional.extend(arg)
+        elif param.kind == Parameter.POSITIONAL_OR_KEYWORD:
+            positional.append(arg)
+        elif param.kind == Parameter.KEYWORD_ONLY:
+            explicit_keywords[name] = arg
+        else:
+            # POSITIONAL_ONLY (C interface stuff) is disallowed for now.
+            assert False, \
+            f'`{param.kind!s}` parameter in function signature not allowed'
+    if kwarg_name is None:
+        assert not keywords, 'extra unusuable command-line arguments found'
+    elif kwarg_name in keywords:
+        # the **kwargs parameter name was explicitly specified in the
+        # interface. Make sure there are no extra values, then unpack.
+        assert set(keywords.keys()) == {kwarg_name}, \
+        'extra unusable command-line arguments found'
+        keywords = keywords[kwarg_name]
+    return func(*positional, **explicit_keywords, **keywords)
 
 
 # We don't just apply the decorator because we want clients to be able to use
