@@ -1,4 +1,5 @@
-from .examples import * 
+from .examples import _OMITTED, empty, example, to_rename
+from .examples import tricky, hard, defaults, positional_by_keyword
 import pytest
 
 
@@ -48,12 +49,16 @@ def test_help_commandlines(capsys, func, s):
 def test_hard():
     first, args, x, kwargs = commandline(hard, 'first 1 2 3 -x y --spam=lovely')
     assert first == 'first'
-    assert args == [1, 2, 3]
+    assert args == (1, 2, 3)
     assert x == 'y'
     assert kwargs == {'bacon': _OMITTED, 'eggs': _OMITTED, 'spam': 'lovely'}
 
 
 def test_defaults():
+    # `second` and `third` should be optional.
+    # `second` should get its default from the function signature.
+    # TODO: for string param-specs, also get type from annotation,
+    # and make it use flags if it isn't a non-VAR_KEYWORD param.
     first, second, third = commandline(defaults, 'first')
     assert first == 'first'
     assert second == 'default'
@@ -61,7 +66,7 @@ def test_defaults():
 
 
 @pytest.mark.parametrize('s', [
-    '-f 1 -s 2', '-s 2 -f 1', 
+    '-f 1 -s 2', '-s 2 -f 1',
     '--first 1 -s 2', '-s 2 --first 1',
     '-f 1 --second 2', '--second 2 -f 1',
     '--first 1 --second 2', '--second 2 --first 1'
