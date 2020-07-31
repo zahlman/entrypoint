@@ -29,29 +29,20 @@ def _make_parser(name, desc, param_specs):
     return lambda command_line: vars(impl.parse_args(command_line))
 
 
-def _setup_entrypoint(invoker, description, name, param_specs, func):
+def _setup_entrypoint(
+    invoke, make_parser, name, description, param_specs, func
+):
     name = name or func.__name__
     desc = description
     if desc is None: # but allow desc == ''
         desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    func.invoke = partial(invoker, func, _make_parser(name, desc, param_specs))
+    func.invoke = partial(invoke, func, _make_parser(name, desc, param_specs))
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name
     func.entrypoint_desc = desc
-    _REGISTRY[func.entrypoint_name] = f'{func.__module__}:{func.__name__}.invoke'
+    _REGISTRY[name] = f'{func.__module__}:{func.__name__}.invoke'
     return func
-
-
-def _entrypoint(invoker, *, description=None, name=None, params=None, **kwargs):
-    return partial(
-        _setup_entrypoint, invoker, description, name, params or kwargs
-    )
-
-
-def make_entrypoint(invoker):
-    """Create an entrypoint decorator from an invoker function."""
-    return partial(_entrypoint, invoker)
 
 
 def invoke(func, parser, command_line=None):
@@ -104,6 +95,11 @@ def invoke(func, parser, command_line=None):
     return func(*positional, **explicit_keywords, **keywords)
 
 
-# We don't just apply the decorator because we want clients to be able to use
-# the default `invoke` to help implement their own invokers.
-entrypoint = make_entrypoint(invoke)
+def entrypoint(
+    invoke=invoke, make_parser=_make_parser, name=None, description=None,
+    params=None, **kwargs
+):
+    return partial(
+        _setup_entrypoint, invoke, make_parser,
+        name, description, params or kwargs
+    )
