@@ -1,30 +1,58 @@
 from argparse import ArgumentParser
 from functools import partial
-from inspect import Parameter, signature, _empty as REQUIRED
+from inspect import Parameter, signature, _empty
 
 
+_REQUIRED = _empty
+_UNSPECIFIED = _empty
 _REGISTRY = {}
 
 
-def _arg_data(name, spec):
-    if isinstance(spec, str):
-        return [name], {'help': spec}
-    if not isinstance(spec, dict):
-        raise TypeError(
-            f'spec for parameter `{name}` must be either string or dict'
-        )
+def _flag_names(name):
+    return [f'-{name[0]}', f'--{name.replace("_", "-")}']
+
+
+def _str_arg_data(name, parser_spec, func_spec):
+    spec = {'help': parser_spec}
+    if func_spec is None:
+        names = _flag_names(name)
+    else:
+        is_keyword = func_spec.kind == Parameter.VAR_KEYWORD
+        names = _flag_names(name) if is_keyword else [name]
+        if func_spec.default != _REQUIRED:
+            spec['default'] = func_spec.default
+            spec['nargs'] = '?'
+        if func_spec.annotation != _UNSPECIFIED:
+            spec['type'] = func_spec.annotation
+    return names, spec
+
+
+def _dict_arg_data(name, parser_spec, func_spec):
+    spec = parser_spec.copy()
     if spec.get('keyword', False):
         del spec['keyword']
-        names = [f'-{name[0]}', f'--{name.replace("_", "-")}']
+        names = _flag_names(name)
     else:
         names = [name]
     return names, spec
 
 
-def _make_parser(name, desc, param_specs):
+def _arg_data(name, parser_spec, func_spec):
+    try:
+        handler = {str: _str_arg_data, dict: _dict_arg_data}[type(parser_spec)]
+    except KeyError:
+        raise TypeError(
+            f'spec for parameter `{name}` must be either string or dict'
+        )
+    return handler(name, parser_spec, func_spec)
+
+
+def _make_parser(name, desc, signature, param_specs):
     impl = ArgumentParser(prog=name, description=desc)
     for param_name, param_spec in param_specs.items():
-        names, spec = _arg_data(param_name, param_spec)
+        names, spec = _arg_data(
+            param_name, param_spec, signature.parameters.get(param_name, None)
+        )
         impl.add_argument(*names, **spec)
     return lambda command_line: vars(impl.parse_args(command_line))
 
@@ -36,7 +64,8 @@ def _setup_entrypoint(
     desc = description
     if desc is None: # but allow desc == ''
         desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    func.invoke = partial(invoke, func, _make_parser(name, desc, param_specs))
+    parser = _make_parser(name, desc, signature(func), param_specs)
+    func.invoke = partial(invoke, func, parser)
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name
@@ -66,7 +95,7 @@ def invoke(func, parser, command_line=None):
             arg = keywords[name]
             del keywords[name]
         else:
-            assert param.default != REQUIRED, \
+            assert param.default != _REQUIRED, \
             f'command-line args missing necessary value for `{name}`'
             arg = keyword.get(name, param.default)
         if param.kind == Parameter.VAR_POSITIONAL:

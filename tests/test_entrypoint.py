@@ -55,10 +55,6 @@ def test_hard():
 
 
 def test_defaults():
-    # `second` and `third` should be optional.
-    # `second` should get its default from the function signature.
-    # TODO: for string param-specs, also get type from annotation,
-    # and make it use flags if it isn't a non-VAR_KEYWORD param.
     first, second, third = commandline(defaults, 'first')
     assert first == 'first'
     assert second == 'default'
