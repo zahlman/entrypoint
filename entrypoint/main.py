@@ -6,14 +6,9 @@ from inspect import Parameter, signature, _empty as REQUIRED
 _REGISTRY = {}
 
 
-def _invoke_wrapper(invoke, func, parser, command_line=None):
-    return invoke(func, vars(parser.parse_args(command_line)))
-
-
-def _add_argument(parser, name, spec):
+def _arg_data(name, spec):
     if isinstance(spec, str):
-        parser.add_argument(name, help=spec)
-        return
+        return [name], {'help': spec}
     if not isinstance(spec, dict):
         raise TypeError(
             f'spec for parameter `{name}` must be either string or dict'
@@ -23,7 +18,15 @@ def _add_argument(parser, name, spec):
         names = [f'-{name[0]}', f'--{name.replace("_", "-")}']
     else:
         names = [name]
-    parser.add_argument(*names, **spec)
+    return names, spec
+
+
+def _make_parser(name, desc, param_specs):
+    impl = ArgumentParser(prog=name, description=desc)
+    for param_name, param_spec in param_specs.items():
+        names, spec = _arg_data(param_name, param_spec)
+        impl.add_argument(*names, **spec)
+    return lambda command_line: vars(impl.parse_args(command_line))
 
 
 def _setup_entrypoint(invoker, description, name, param_specs, func):
@@ -31,10 +34,7 @@ def _setup_entrypoint(invoker, description, name, param_specs, func):
     desc = description
     if desc is None: # but allow desc == ''
         desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    parser = ArgumentParser(prog=name, description=desc)
-    for param_name, param_spec in param_specs.items():
-        _add_argument(parser, param_name, param_spec)
-    func.invoke = partial(_invoke_wrapper, invoker, func, parser)
+    func.invoke = partial(invoker, func, _make_parser(name, desc, param_specs))
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name
@@ -54,14 +54,14 @@ def make_entrypoint(invoker):
     return partial(_entrypoint, invoker)
 
 
-def invoke(func, args):
+def invoke(func, parser, command_line=None):
     """Default invoker."""
     # Any errors that occur here should be treated as programming errors,
     # because they indicate that the interface created through the
     # entrypoint decorator is broken (does not reliably map to the underlying
     # function's parameters). So we use assertions.
     positional = []
-    keywords = args.copy()
+    keywords = parser(command_line)
     kwarg_name = None
     seen_kwargs = False
     explicit_keywords = {}
