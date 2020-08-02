@@ -16,7 +16,7 @@ These keyword arguments are treated specially:
 
 * `make_parser` - a callable that creates a *parser function* (see "Custom parser functions" and "The default `make_parser`").
 
-* `name` - the (string) name of the entry point. This will be assigned to the `.entrypoint_name` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. It is also used for automatic update of `pyproject.toml` (see *"Entrypoint discovery"*). By default, the function's `__name__` attribute is used.
+* `name` - the (string) name of the entry point. This will be assigned to the `.entrypoint_name` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. It is also used for automatic update of `pyproject.toml` (see *"Discovery tool for entry points"*). By default, the function's `__name__` attribute is used.
 
 * `description` - a description string for the entry point. This will be assigned to the `.entrypoint_desc` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. By default, the first line of the function's `__doc__` is used, or failing that, an empty string.
 
@@ -118,3 +118,25 @@ def my_entrypoint(*args):
 ```
 
 This entry point expects one or more (per `argparse`'s syntax for `nargs`) integer values to be supplied: `my_entrypoint <x> [<y> [<z> ...]]`. The default `invoke` setup is capable of handling this seamlessly. Note that a naive implementation (like `return func(**parser(command_line))`) would fail, since a keyword argument cannot actually be used to supply values for variable-length positional parameters, even if the name matches.
+
+## Command-line utilities
+
+The `entrypoint` package has two entry points of its own (created and discovered using its own functionality, of course):
+
+* `entrypoint-update-metadata` - used to discover entry points and rewrite `pyproject.toml`.
+
+* `entrypoint-wrapper` - creates a wrapper `.bat` file in the current directory.
+
+### Discovery tool for entry points
+
+In your main project directory, run `entrypoint-update-metadata` (no arguments). It discovers uses of the `@entrypoint` decorator by recursively searching for `.py` files, dynamically importing each of them separately, and then seeing what ens up in the private registry of decorated functions. For each entry point, an appropriate line is written in the `tool.poetry.scripts` section of your `pyproject.toml` (TODO: support build systems other than Poetry).
+
+### Wrapper creation
+
+After installing your package (probably in editable mode), run `entrypoint-wrapper <name of entry point>` to create a wrapper .bat file or shell script (NOTE: while the platform is detected using `os.name`, this has not been tested on a non-Windows system) in the current directory. This is useful because it:
+
+* provides a double-clickable shortcut;
+* which opens a terminal window when double-clicked and keeps it open after the program has finished running (waiting for one more keypress);
+* and which runs in the current directory rather than the Scripts directory (like a shortcut or symlink normally would).
+
+You can use this for your own convenience with any package's entry points, not just ones created using this library. You could also run this as part of a post-install script to give your clients a desktop shortcut for your programs.
