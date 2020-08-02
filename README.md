@@ -10,15 +10,15 @@ The decorator accepts only keyword arguments, and cannot be used in no-argument 
 
 These keyword arguments are treated specially:
 
-`invoke` - a callable that overrides the default logic for passing the parsed arguments to the function. The default `invoke` function is available as `entrypoint.invoke` to do the heavy lifting in custom implementations.
+* `invoke` - a callable that overrides the default logic for passing the parsed arguments to the function. The default `invoke` function is available as `entrypoint.invoke` to do the heavy lifting in custom implementations.
 
-`make_parser` - a callable that creates a *parser function* (see "Custom parser functions" and "The default `make_parser`").
+* `make_parser` - a callable that creates a *parser function* (see "Custom parser functions" and "The default `make_parser`").
 
-`name` - the (string) name of the entry point. This will be assigned to the `.entrypoint_name` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. It is also used for automatic update of `pyproject.toml` (see *"Entrypoint discovery"*). By default, the function's `__name__` attribute is used.
+* `name` - the (string) name of the entry point. This will be assigned to the `.entrypoint_name` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. It is also used for automatic update of `pyproject.toml` (see *"Entrypoint discovery"*). By default, the function's `__name__` attribute is used.
 
-`description` - a description string for the entry point. This will be assigned to the `.entrypoint_desc` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. By default, the first line of the function's `__doc__` is used, or failing that, an empty string.
+* `description` - a description string for the entry point. This will be assigned to the `.entrypoint_desc` attribute of the function for introspection purposes, and is used by the default parser function to create a command-line usage message for the entry point. By default, the first line of the function's `__doc__` is used, or failing that, an empty string.
 
-`params` - if provided, this should be a dict that provides *parameter specifications* used by the `make_parser` callable. Otherwise, you can provide these as `**kwargs`. (This system allows you to have command-line arguments with names that would otherwise conflict, while still allowing the convenience of `**kwargs` in ordinary cases.)
+* `params` - if provided, this should be a dict that provides *parameter specifications* used by the `make_parser` callable. Otherwise, you can provide these as `**kwargs`. (This system allows you to have command-line arguments with names that would otherwise conflict, while still allowing the convenience of `**kwargs` in ordinary cases.)
 
 The decorator does not wrap or replace the function, but instead registers it in a private registry and adds three attributes:
 
@@ -54,7 +54,7 @@ By default, the key from the `param_specs` entry will provide the name for the `
 
 For example, if the `param_specs` dict maps `'flags'` to `'a flags argument'`, and there is no `flags` parameter for the function being decorated, then a flags argument is created. The call to `.add_argument` looks like `.add_argument(['-f', '--flags'], help='a flags argument')`. That is to say: when `-f foo` or `--flags foo` is specified on the command line, the parser will add `{'flags': 'foo'}` to the arguments dict used to invoke the entrypoint function.
 
-## Custom invocation logic
+### Custom invocation logic
 
 Whatever function is supplied as `invoke` will receive a dict of parsed command-line arguments, and call the decorated function. It has two parameters:
 
