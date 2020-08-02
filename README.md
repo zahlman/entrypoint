@@ -26,7 +26,7 @@ The decorator does not wrap or replace the function, but instead registers it in
 
 * `entrypoint_name` - described above
 * `entrypoint_desc` - described above
-* `invoke` - as mentioned in the introduction, this is the true entrypoint to the code that will be referenced in `pyproject.toml` or `setup.py`. This setup ensures that the original function can function normally as a part of your package's API when imported.
+* `invoke` - as mentioned in the introduction, this is the true entry point to the code that will be referenced in `pyproject.toml` or `setup.py`. This setup ensures that the original function can function normally as a part of your package's API when imported.
 
 ## Customization
 
@@ -34,8 +34,8 @@ The decorator does not wrap or replace the function, but instead registers it in
 
 A parser function needs to accept a string (representing the command line, minus the program name) and return a dict of parsed arguments (mapping from string names to arbitrary objects). It will be created by a `make_parser` implementation, which returns a parser function and accepts four arguments:
 
-* `name` - the (string) name of the entrypoint
-* `desc` - the (string) description for the entrypoint
+* `name` - the (string) name of the entry point
+* `desc` - the (string) description for the entry point
 * `signature` - the signature of the function being decorated (an `inspect.Signature` object)
 * `param_specs` - the parameter specifications (provided in the `params` or `**kwargs` of the decorator; a dict mapping strings to arbitrary objects)
 
@@ -54,7 +54,7 @@ The default `make_parser` implementation creates an `argparse.ArgumentParser` wi
 
 By default, the key from the `param_specs` entry will provide the name for the `ArgumentParser` argument. However, if a "flags" argument is being generated, this will be replaced by short and long forms of the flag syntax.
 
-For example, if the `param_specs` dict maps `'flags'` to `'a flags argument'`, and there is no `flags` parameter for the function being decorated, then a flags argument is created. The call to `.add_argument` looks like `.add_argument(['-f', '--flags'], help='a flags argument')`. That is to say: when `-f foo` or `--flags foo` is specified on the command line, the parser will add `{'flags': 'foo'}` to the arguments dict used to invoke the entrypoint function.
+For example, if the `param_specs` dict maps `'flags'` to `'a flags argument'`, and there is no `flags` parameter for the function being decorated, then a flags argument is created. The call to `.add_argument` looks like `.add_argument(['-f', '--flags'], help='a flags argument')`. That is to say: when `-f foo` or `--flags foo` is specified on the command line, the parser will add `{'flags': 'foo'}` to the arguments dict used to invoke the function that serves as your entry point.
 
 ### Custom invocation logic
 
@@ -65,7 +65,7 @@ Whatever function is supplied as `invoke` will receive a dict of parsed command-
 
 The `.invoke` attribute attached to the decorated function is a wrapper that calls the `parser` created at decoration time on the supplied command line, and then uses that result to call `invoke`.
 
-If you implement your own `invoke` function, you should use `entrypoints.invoke` to do the heavy lifting. See the last example in the "Examples" section to understand the main difficulty involved. You could however use this to preprocess the `args` or to add exception handling. 
+If you implement your own `invoke` function, you should use `entrypoint.invoke` to do the heavy lifting. See the last example in the "Examples" section to understand the main difficulty involved. You could however use this to preprocess the `args` or to add exception handling.
 
 ### The default invoke function
 
@@ -85,7 +85,7 @@ def my_entrypoint(arg:int):
     pass
 ```
 
-This is the simplest usage. The argument parser that is generated will read a single, positional parameter from the command line. The entrypoint will be named `my_entrypoint`, so the command-line usage will look like `my_entrypoint <arg>`. The value supplied for `arg` on the command line will be converted to integer before the function is called (the `make_parser` implementation inspected the function signature to make this decision). The `invoke` function will receive a dict like `{'arg': <some integer value>}`, and use it to call `my_entrypoint`.
+This is the simplest usage. The argument parser that is generated will read a single, positional parameter from the command line. The entry point will be named `my_entrypoint`, so the command-line usage will look like `my_entrypoint <arg>`. The value supplied for `arg` on the command line will be converted to integer before the function is called (the `make_parser` implementation inspected the function signature to make this decision). The `invoke` function will receive a dict like `{'arg': <some integer value>}`, and use it to call `my_entrypoint`.
 
 ```python
 @entrypoint(arg='documentation')
@@ -117,4 +117,4 @@ def my_entrypoint(*args):
     pass
 ```
 
-This entrypoint expects one or more (per `argparse`'s syntax for `nargs`) integer values to be supplied: `my_entrypoint <x> [<y> [<z> ...]]`. The default `invoke` setup is capable of handling this seamlessly. Note that a naive implementation (like `return func(**parser(command_line))`) would fail, since a keyword argument cannot actually be used to supply values for variable-length positional parameters, even if the name matches.
+This entry point expects one or more (per `argparse`'s syntax for `nargs`) integer values to be supplied: `my_entrypoint <x> [<y> [<z> ...]]`. The default `invoke` setup is capable of handling this seamlessly. Note that a naive implementation (like `return func(**parser(command_line))`) would fail, since a keyword argument cannot actually be used to supply values for variable-length positional parameters, even if the name matches.
