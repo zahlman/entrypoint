@@ -19,6 +19,8 @@ def _str_arg_data(name, parser_spec, func_spec):
     else:
         is_keyword = func_spec.kind == Parameter.VAR_KEYWORD
         names = _flag_names(name) if is_keyword else [name]
+        if is_keyword:
+            spec['nargs'] = '?'
         if func_spec.default != _REQUIRED:
             spec['default'] = func_spec.default
             spec['nargs'] = '?'
@@ -65,7 +67,7 @@ def _setup_entrypoint(
     if desc is None: # but allow desc == ''
         desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
     parser = _make_parser(name, desc, signature(func), param_specs)
-    func.invoke = partial(invoke, func, parser)
+    func.invoke = lambda command_line=None: invoke(func, parser(command_line))
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name
@@ -74,14 +76,16 @@ def _setup_entrypoint(
     return func
 
 
-def invoke(func, parser, command_line=None):
+def invoke(func, args):
     """Default invoker."""
     # Any errors that occur here should be treated as programming errors,
     # because they indicate that the interface created through the
     # entrypoint decorator is broken (does not reliably map to the underlying
     # function's parameters). So we use assertions.
     positional = []
-    keywords = parser(command_line)
+    # `args` come from the wrapper function and are not externally accessible,
+    # so there is no need to make a copy even though we delete keys.
+    keywords = args
     kwarg_name = None
     seen_kwargs = False
     explicit_keywords = {}
