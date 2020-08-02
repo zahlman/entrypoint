@@ -1,10 +1,12 @@
 # `entrypoint` - quick and easy entry points for Python packages
 
-## Basic usage
+This package mainly provides two things: a clever decorator called `@entrypoint` that you can use to create entry points, and a command-line tool to discover the entry points you created this way and update `pyproject.toml` to reference them properly.
 
-`from entrypoint import entrypoint`, and then use the `@entrypoint` decorator on the function that should serve as the entry point to your code. The decorator adds an `.invoke` member to the function, which is the actual entry point that should be referenced in your `pyproject.toml` (or `setup.py`).
+## The `@entrypoint` decorator
 
-### The `@entrypoint` decorator
+To create an entry point to your code, simply `from entrypoint import entrypoint`, and then use the `@entrypoint` decorator on the function that should serve as the entry point to your code. The decorator adds an `.invoke` member to the function, which is the actual entry point that should be referenced in your `pyproject.toml` (or `setup.py`).
+
+### Basic usage
 
 The decorator accepts only keyword arguments, and cannot be used in no-argument form. It can, however, be used with zero arguments (particularly useful if the decorated function also takes zero arguments).
 
@@ -73,7 +75,7 @@ The default implementation, after calling `parser(command_line)` to get a dict o
 
 2. Pass `*args` properly, if the function has a named `VAR_POSITIONAL` ("\*args") parameter. Basically, the corresponding value in the arguments dict will be iterated over to supply additional position arguments (an assertion failure occurs if the value is not iterable). Note that, if you write a custom `invoke` that makes use of the default `invoke`, you can be sure that any `TypeError` or `ValueError` raised came from your original function, since any incompatibility in arguments will become an assertion instead. (You could, of course, catch `AssertionError` here and tell the user to file a bug report.)
 
-## Examples
+## Example decorator usage
 
 There are a lot of layers to this, so examples are instructive. More examples can be seen in `examples.py`, and their behaviour is illustrated by the corresponding tests.
 
