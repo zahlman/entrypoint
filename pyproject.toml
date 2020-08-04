@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "entrypoint"
-version = "0.1.2+24"
+version = "0.1.3+27"
 description = ""
 authors = [ "Karl Knechtel <karl.a.knechtel@gmail.com>",]
 
@@ -17,3 +17,8 @@ pytest = "^5.2"
 [tool.poetry.scripts]
 entrypoint-update-metadata = "entrypoint.discovery:write_all.invoke"
 entrypoint-wrapper = "entrypoint.discovery:make_wrapper_script.invoke"
+doc_example_1 = "entrypoint.examples:doc_example_1.invoke"
+doc_example_2 = "entrypoint.examples:doc_example_2.invoke"
+doc_example_3 = "entrypoint.examples:doc_example_3.invoke"
+doc_example_4 = "entrypoint.examples:doc_example_4.invoke"
+doc_example_5 = "entrypoint.examples:doc_example_5.invoke"
