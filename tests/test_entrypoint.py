@@ -1,5 +1,7 @@
-from entrypoint.examples import _OMITTED, empty, example, to_rename
-from entrypoint.examples import tricky, hard, defaults, positional_by_keyword
+from entrypoint.examples import (
+    doc_example_1, doc_example_2, doc_example_3, doc_example_4, doc_example_5,
+    empty, example, to_rename, tricky, hard, defaults, positional_by_keyword
+)
 import pytest
 
 
@@ -26,6 +28,18 @@ def test_from_python():
     assert tricky.entrypoint_desc == ''
     assert empty.entrypoint_name is not None
     assert empty.entrypoint_desc is not None
+
+
+def test_doc_examples():
+    """Verify the examples given in the documentation, with proper input.
+    We don't bother checking the printed output, just the returned values."""
+    assert _commandline(doc_example_1, '1') == 1
+    assert _commandline(doc_example_2, '--arg=test') == {'arg': 'test'}
+    assert _commandline(doc_example_3, '-t=test') == {'tricky': 'test'}
+    assert _commandline(doc_example_4, '--fancy=1') == 1
+    assert _commandline(doc_example_4, '') is None
+    assert _commandline(doc_example_5, '1 2 3') == (1, 2, 3)
+    assert _commandline(doc_example_5, '') == ()
 
 
 @pytest.mark.parametrize('func', [example, to_rename])
@@ -63,7 +77,8 @@ def test_hard():
     assert first == 'first'
     assert args == (1, 2, 3)
     assert x == 'y'
-    assert kwargs == {'bacon': _OMITTED, 'eggs': _OMITTED, 'spam': 'lovely'}
+    # `bacon` and `eggs` should be suppressed by argparse.
+    assert kwargs == {'spam': 'lovely'}
 
 
 def test_defaults():

@@ -1,28 +1,35 @@
+from argparse import SUPPRESS
 from . import entrypoint
+
 
 @entrypoint(arg='an argument')
 def doc_example_1(arg:int):
     print(f'Doc example 1: arg={arg} of type {type(arg)}')
+    return arg
 
 
 @entrypoint(arg='an argument')
 def doc_example_2(**kwargs):
     print(f'Doc example 2: kwargs={kwargs}')
+    return kwargs
 
 
 @entrypoint(tricky='a tricky argument')
 def doc_example_3(**tricky):
     print(f'Doc example 3 is a bit tricky: {tricky}')
+    return tricky
 
 
 @entrypoint(fancy={'help': 'fancy help', 'type': int, 'keyword': True})
 def doc_example_4(fancy):
     print(f'This is a fancy way to end up with {fancy} (of type {type(fancy)})')
+    return fancy
 
 
-@entrypoint(args={'nargs': '+', 'type': int, 'help': 'values'})
+@entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
 def doc_example_5(*args):
     print(f'Finally, a test of variable positional arguments: {args}')
+    return args
 
 
 # The computed description should always be a string, not None.
@@ -69,14 +76,13 @@ def tricky(description, name):
     pass
 
 
-_OMITTED = object()
 @entrypoint(
     first='an ordinary argument defaulting to a placeholder string',
     args={'help': 'additional string arguments', 'nargs': '+', 'type': int},
     x={'keyword': True, 'help': 'a keyword-only argument with no default'},
-    spam={'keyword': True, 'default': _OMITTED, 'help': 'spam value'},
-    bacon={'keyword': True, 'default': _OMITTED, 'help': 'bacon value'},
-    eggs={'keyword': True, 'default': _OMITTED, 'help': 'eggs value'}
+    spam={'keyword': True, 'default': SUPPRESS, 'help': 'spam value'},
+    bacon={'keyword': True, 'default': SUPPRESS, 'help': 'bacon value'},
+    eggs={'keyword': True, 'default': SUPPRESS, 'help': 'eggs value'}
 )
 def hard(first, *args, x, **kwargs):
     """A harder test of how command-line args are mapped to parameters."""
