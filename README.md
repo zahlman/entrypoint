@@ -77,44 +77,44 @@ The default implementation, after calling `parser(command_line)` to get a dict o
 
 ## Example decorator usage
 
-There are a lot of layers to this, so examples are instructive. More examples can be seen in `examples.py`, and their behaviour is illustrated by the corresponding tests.
+There are a lot of layers to this, so examples are instructive. All of these and more are available via `from entrypoint import examples`.
 
 ```python
-@entrypoint(arg='documentation')
-def my_entrypoint(arg:int):
-    pass
+@entrypoint(arg='an argument')
+def doc_example_1(arg:int):
+    print(f'Doc example 1: arg={arg} of type {type(arg)}')
 ```
 
-This is the simplest usage. The argument parser that is generated will read a single, positional parameter from the command line. The entry point will be named `my_entrypoint`, so the command-line usage will look like `my_entrypoint <arg>`. The value supplied for `arg` on the command line will be converted to integer before the function is called (the `make_parser` implementation inspected the function signature to make this decision). The `invoke` function will receive a dict like `{'arg': <some integer value>}`, and use it to call `my_entrypoint`.
+This is the simplest usage. The argument parser that is generated will read a single, positional parameter from the command line. The entry point will be named `doc_example_1`, so the command-line usage will look like `doc_example_1 <arg>`. The value supplied for `arg` on the command line will be converted to integer before the function is called (the `make_parser` implementation inspected the function signature to make this decision). The `invoke` function will receive a dict like `{'arg': <some integer value>}`, and use it to call `my_entrypoint`.
 
 ```python
-@entrypoint(arg='documentation')
-def my_entrypoint(**kwargs):
-    pass
+@entrypoint(arg='an argument')
+def doc_example_2(**kwargs):
+    print(f'Doc example 2: kwargs={kwargs}')
 ```
 
-This time, there is no parameter named `arg`, so the argument parser will generate a flags argument that is passed in the `**kwargs`. The command-line usage will look like `my_entrypoint -a <arg>`, or `my_entrypoint --arg <arg>`, or `my_entrypoint` (the argument is optional). The `invoke` function will receive a dict that may or may not contain an `'arg'` key with a *string* value (since no type was specified). The default `invoke` function will call `my_entrypoint` such that `'arg'`, if specified, will be a key in `kwargs`.
+This time, there is no parameter named `arg`, so the argument parser will generate a flags argument that is passed in the `**kwargs`. The command-line usage will look like `doc_example_2 -a <arg>`, or `doc_example_2 --arg <arg>`, or `doc_example_2` (the argument is optional). The `invoke` function will receive a dict that may or may not contain an `'arg'` key with a *string* value (since no type was specified). The default `invoke` function will call `doc_example_2` such that `'arg'`, if specified, will be a key in `kwargs`.
 
 ```python
-@entrypoint(tricky='documentation')
-def my_entrypoint(**tricky):
-    pass
+@entrypoint(tricky='a tricky argument')
+def doc_example_3(**tricky):
+    print(f'Doc example 3 is a bit tricky: {tricky}')
 ```
 
 This is an edge case. When called like `my_entrypoint -t example` (or `my_entrypoint --tricky example`), the string `'example'` will be the value of the *key* `'tricky'` within the `tricky` keyword arguments - it will not be parsed into a keyword arguments dict.
 
 ```python
 @entrypoint(fancy={'help': 'fancy help', 'type': int, 'keyword': True})
-def my_entrypoint(fancy):
-    pass
+def doc_example_4(fancy):
+    print(f'This is a fancy way to end up with {fancy} (of type {type(fancy)})')
 ```
 
 This time, a dict is used to configure the parsing for `fancy`. The help text now must be explicitly labelled in the `'help'` key of the dict. No introspection is done (FIXME?), so we specify that the command-line argument will be converted to integer with the `'type'` key. These are both forwarded directly to `argparse.ArgumentParser.add_argument`. The `'keyword'` key requests a flags argument, so the call looks like `.add_argument(['-f', '--fancy'], help='fancy help', type=int)`. The command-line usage will look like `my_entrypoint -f 3`; the argument is mandatory even though it's provided by a flag.
 
 ```python
-@entrypoints(args={nargs: '+', 'type': 'int', 'help': 'values'})
-def my_entrypoint(*args):
-    pass
+@entrypoint(args={'nargs': '+', 'type': int, 'help': 'values'})
+def doc_example_5(*args):
+    print(f'Finally, a test of variable positional arguments: {args}')
 ```
 
 This entry point expects one or more (per `argparse`'s syntax for `nargs`) integer values to be supplied: `my_entrypoint <x> [<y> [<z> ...]]`. The default `invoke` setup is capable of handling this seamlessly. Note that a naive implementation (like `return func(**parser(command_line))`) would fail, since a keyword argument cannot actually be used to supply values for variable-length positional parameters, even if the name matches.
