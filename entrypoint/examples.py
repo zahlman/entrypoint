@@ -8,26 +8,20 @@ def doc_example_1(arg:int):
     return arg
 
 
-@entrypoint(arg='an argument')
+@entrypoint(arg='a normal argument', kwargs='a tricky argument')
 def doc_example_2(**kwargs):
     print(f'Doc example 2: kwargs={kwargs}')
     return kwargs
 
 
-@entrypoint(tricky='a tricky argument')
-def doc_example_3(**tricky):
-    print(f'Doc example 3 is a bit tricky: {tricky}')
-    return tricky
-
-
 @entrypoint(fancy={'help': 'fancy help', 'type': int, 'keyword': True})
-def doc_example_4(fancy):
+def doc_example_3(fancy):
     print(f'This is a fancy way to end up with {fancy} (of type {type(fancy)})')
     return fancy
 
 
 @entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
-def doc_example_5(*args):
+def doc_example_4(*args):
     print(f'Finally, a test of variable positional arguments: {args}')
     return args
 

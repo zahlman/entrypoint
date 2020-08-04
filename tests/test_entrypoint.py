@@ -1,5 +1,5 @@
 from entrypoint.examples import (
-    doc_example_1, doc_example_2, doc_example_3, doc_example_4, doc_example_5,
+    doc_example_1, doc_example_2, doc_example_3, doc_example_4,
     empty, example, to_rename, tricky, hard, defaults, positional_by_keyword
 )
 import pytest
@@ -34,12 +34,13 @@ def test_doc_examples():
     """Verify the examples given in the documentation, with proper input.
     We don't bother checking the printed output, just the returned values."""
     assert _commandline(doc_example_1, '1') == 1
-    assert _commandline(doc_example_2, '--arg=test') == {'arg': 'test'}
-    assert _commandline(doc_example_3, '-t=test') == {'tricky': 'test'}
-    assert _commandline(doc_example_4, '--fancy=1') == 1
-    assert _commandline(doc_example_4, '') is None
-    assert _commandline(doc_example_5, '1 2 3') == (1, 2, 3)
-    assert _commandline(doc_example_5, '') == ()
+    assert _commandline(doc_example_2, '--arg=normal -k tricky') == {
+        'arg': 'normal', 'kwargs': 'tricky'
+    }
+    assert _commandline(doc_example_3, '--fancy=1') == 1
+    assert _commandline(doc_example_3, '') is None
+    assert _commandline(doc_example_4, '1 2 3') == (1, 2, 3)
+    assert _commandline(doc_example_4, '') == ()
 
 
 @pytest.mark.parametrize('func', [example, to_rename])
