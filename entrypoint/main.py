@@ -86,14 +86,12 @@ def invoke(func, args):
     # `args` come from the wrapper function and are not externally accessible,
     # so there is no need to make a copy even though we delete keys.
     keywords = args
-    kwarg_name = None
-    seen_kwargs = False
+    has_kwargs_param = False
     explicit_keywords = {}
     for name, param in signature(func).parameters.items():
-        assert not seen_kwargs # just a sanity check.
+        assert not has_kwargs_param # just a sanity check.
         if param.kind == Parameter.VAR_KEYWORD:
-            seen_kwargs = True # this should be the last one.
-            kwarg_name = name
+            has_kwargs_param = True # this should be the last parameter.
             continue
         if name in keywords:
             arg = keywords[name]
@@ -117,14 +115,8 @@ def invoke(func, args):
             # POSITIONAL_ONLY (C interface stuff) is disallowed for now.
             assert False, \
             f'`{param.kind!s}` parameter in function signature not allowed'
-    if kwarg_name is None:
-        assert not keywords, 'extra unusuable command-line arguments found'
-    elif kwarg_name in keywords:
-        # the **kwargs parameter name was explicitly specified in the
-        # interface. Make sure there are no extra values, then unpack.
-        assert set(keywords.keys()) == {kwarg_name}, \
-        'extra unusable command-line arguments found'
-        keywords = keywords[kwarg_name]
+    if not has_kwargs_param:
+        assert not keywords, 'extra unusable command-line arguments found'
     return func(*positional, **explicit_keywords, **keywords)
 
 
