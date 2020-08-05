@@ -17,8 +17,10 @@ def _as_dict(decorator_spec):
         )
 
 
-def _add_to_parser(parser, param_name, decorator_spec, signature):
-    decorator_spec = _as_dict(decorator_spec)
+def _add_to_parser(parser, param_name, spec, signature):
+    # prepare two specs: one from modifying the decorator's spec, and one
+    # representing additional requirements from the parameter's signature.
+    decorator_spec = _as_dict(spec)
     add_method = parser.add_argument
     if param_name.startswith('_'):
         add_method, param_name = parser.add_option, param_name[1:]
@@ -38,7 +40,7 @@ def _add_to_parser(parser, param_name, decorator_spec, signature):
 
 
 def _setup_entrypoint(
-    dispatch, parser_class, parser_args, param_specs, func
+    dispatch, parser_class, parser_args, specs, func
 ):
     # set defaults if missing or empty
     name = parser_args.get('name', '') or func.__name__
@@ -46,8 +48,8 @@ def _setup_entrypoint(
     description = parser_args.get('description', '') or doc_top
     parser_args['name'], parser_args['description'] = name, description
     parser = parser_class(dispatch, func, parser_args)
-    for param_name, decorator_spec in param_specs.items():
-        _add_to_parser(parser, param_name, decorator_spec, signature_of(func))
+    for param_name, spec in specs.items():
+        _add_to_parser(parser, param_name, spec, signature_of(func))
     func.invoke = parser.invoke
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
@@ -103,13 +105,13 @@ def default_dispatch(func, args):
 
 def entrypoint(
     *, dispatch=default_dispatch, parser_class=DefaultParser,
-    parser_args=None, param_specs=None, **kwargs
+    parser_args=None, specs=None, **kwargs
 ):
     parser_args = {} if parser_args is None else parser_args.copy()
-    param_specs = {} if param_specs is None else param_specs.copy()
+    specs = {} if specs is None else specs.copy()
     to_parser = parser_class.config_keys()
     for key, value in kwargs.items():
-        (parser_args if key in to_parser else param_specs)[key] = value
+        (parser_args if key in to_parser else specs)[key] = value
     return partial(
-        _setup_entrypoint, dispatch, parser_class, parser_args, param_specs
+        _setup_entrypoint, dispatch, parser_class, parser_args, specs
     )

@@ -63,7 +63,7 @@ def to_rename(foo, bar, baz):
 
 @entrypoint(
     description='Overridden description', name='renamed_1',
-    param_specs={'description': 'description', 'name': 'name'}
+    specs={'description': 'description', 'name': 'name'}
 )
 def tricky_1(description, name):
     """Test the use of `param_specs` to disambiguate decorator arguments."""
