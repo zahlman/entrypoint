@@ -38,14 +38,14 @@ def _add_to_parser(parser, param_name, decorator_spec, signature):
 
 
 def _setup_entrypoint(
-    dispatch, parser_class, name, description, param_specs, func
+    dispatch, parser_class, parser_args, param_specs, func
 ):
-    name = name or func.__name__
-    if description is None: # but allow desc == ''
-        description = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    parser = parser_class(
-        dispatch, func, {'name': name, 'description': description}
-    )
+    # set defaults if missing or empty
+    name = parser_args.get('name', '') or func.__name__
+    doc_top = func.__doc__.splitlines()[0] if func.__doc__ else ''
+    description = parser_args.get('description', '') or doc_top
+    parser_args['name'], parser_args['description'] = name, description
+    parser = parser_class(dispatch, func, parser_args)
     for param_name, decorator_spec in param_specs.items():
         _add_to_parser(parser, param_name, decorator_spec, signature_of(func))
     func.invoke = parser.invoke
@@ -102,10 +102,14 @@ def default_dispatch(func, args):
 
 
 def entrypoint(
-    *, parser_class=DefaultParser, dispatch=default_dispatch,
-    name=None, description=None, params=None, **kwargs
+    *, dispatch=default_dispatch, parser_class=DefaultParser,
+    parser_args=None, param_specs=None, **kwargs
 ):
+    parser_args = {} if parser_args is None else parser_args.copy()
+    param_specs = {} if param_specs is None else param_specs.copy()
+    to_parser = parser_class.config_keys()
+    for key, value in kwargs.items():
+        (parser_args if key in to_parser else param_specs)[key] = value
     return partial(
-        _setup_entrypoint, dispatch, parser_class,
-        name, description, params or kwargs
+        _setup_entrypoint, dispatch, parser_class, parser_args, param_specs
     )

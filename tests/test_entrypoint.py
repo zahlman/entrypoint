@@ -1,6 +1,6 @@
 from entrypoint.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, example, to_rename, tricky, hard, defaults, positional_by_keyword
+    empty, example, to_rename, tricky_1, hard, defaults, positional_by_keyword
 )
 import pytest
 
@@ -24,8 +24,8 @@ def test_from_python():
     assert to_rename(1, 2, 3) == 'foo=1, bar=2, baz=3'
     assert to_rename.entrypoint_name == 'renamed'
     assert to_rename.entrypoint_desc == 'An example with custom labels.'
-    assert tricky.entrypoint_name == 'tricky'
-    assert tricky.entrypoint_desc == ''
+    assert tricky_1.entrypoint_name == 'renamed_1'
+    assert tricky_1.entrypoint_desc == 'Overridden description'
     assert empty.entrypoint_name is not None
     assert empty.entrypoint_desc is not None
 

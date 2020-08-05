@@ -62,11 +62,20 @@ def to_rename(foo, bar, baz):
 
 
 @entrypoint(
-    description='', # explicit override - can't use `None`
-    params={'description': 'description', 'name': 'name'}
+    description='Overridden description', name='renamed_1',
+    param_specs={'description': 'description', 'name': 'name'}
 )
-def tricky(description, name):
-    """Test the use of `params` to allow parameters with special names."""
+def tricky_1(description, name):
+    """Test the use of `param_specs` to disambiguate decorator arguments."""
+    pass
+
+
+@entrypoint(
+    parser_args={'dispatch': 'an argument', 'parser_class': 'another argument'}
+)
+def tricky_2(dispatch, parser_class):
+    """Test the use of `parser_args` to disambiguate decorator arguments."""
+    # Just the fact that this doesn't crash at startup constitutes the test.
     pass
 
 
