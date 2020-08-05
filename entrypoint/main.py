@@ -80,9 +80,9 @@ def default_dispatch(func, args):
             arg = keywords[name]
             del keywords[name]
         else:
-            assert param.default != _REQUIRED, \
+            assert param.default != _empty, \
             f'command-line args missing necessary value for `{name}`'
-            arg = keyword.get(name, param.default)
+            arg = keywords.get(name, param.default)
         if param.kind == Parameter.VAR_POSITIONAL:
             try:
                 iter(arg)
@@ -99,7 +99,8 @@ def default_dispatch(func, args):
             assert False, \
             f'`{param.kind!s}` parameter in function signature not allowed'
     if not has_kwargs_param:
-        assert not keywords, 'extra unusable command-line arguments found'
+        k = set(keywords.keys())
+        assert not k, f'extra unusable command-line arguments found: {k}'
     return func(*positional, **explicit_keywords, **keywords)
 
 
