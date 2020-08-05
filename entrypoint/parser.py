@@ -15,7 +15,7 @@ class Parser:
 
 
     @classmethod
-    def config_keys(cls):
+    def config_keys(cls) -> set:
         """Names of keyword arguments used for initialization.
         The decorator will pass these to the constructor rather than using
         them for add_option or add_argument calls."""
