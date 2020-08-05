@@ -67,11 +67,11 @@ class DefaultParser(Parser):
         )
 
 
-    def _merge_spec(self, decorator_spec, param_spec):
+    def _merge_spec(self, decorator_spec, param_spec, is_option):
         # We handle the parameter spec by letting it provide defaults
         # for the spec that will be passed to `.add_argument`.
         spec = param_spec.copy()
-        if 'default' in spec:
+        if 'default' in spec and not is_option:
             spec['nargs'] = '?'
         # Explicitly specified values take precedence.
         spec.update(decorator_spec)
@@ -81,13 +81,13 @@ class DefaultParser(Parser):
     def add_option(self, name, decorator_spec, param_spec):
         self._impl.add_argument(
             f'-{name[0]}', f'--{name.replace("_", "-")}',
-            **self._merge_spec(decorator_spec, param_spec)
+            **self._merge_spec(decorator_spec, param_spec, True)
         )
 
 
     def add_argument(self, name, decorator_spec, param_spec):
         self._impl.add_argument(
-            name, **self._merge_spec(decorator_spec, param_spec)
+            name, **self._merge_spec(decorator_spec, param_spec, False)
         )
 
 
