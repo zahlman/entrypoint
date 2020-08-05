@@ -1,6 +1,7 @@
 from entrypoint.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, example, to_rename, tricky_1, hard, defaults, positional_by_keyword
+    empty, example, to_rename, tricky_1, hard, defaults, positional_by_keyword,
+    inverse_flag
 )
 import pytest
 
@@ -101,3 +102,12 @@ def test_defaults():
 def test_positional_by_keyword(s):
     """Test that keyword/flags arguments work and can be passed out of order."""
     assert _commandline(positional_by_keyword, s) == (1, 2)
+
+
+def test_inverse_flag(capsys):
+    assert _commandline(inverse_flag, '')
+    assert not _commandline(inverse_flag, '-r')
+    assert not _commandline(inverse_flag, '--renamed-and-inverted')
+    # Make sure it doesn't also work with underscores.
+    bad_arg = '--renamed_and_inverted'
+    assert bad_arg in _exited(capsys, inverse_flag, bad_arg).err

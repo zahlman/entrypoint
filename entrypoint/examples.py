@@ -111,3 +111,11 @@ def defaults(first, second='default', third='also default'):
 )
 def positional_by_keyword(first, second):
     return first, second
+
+
+@entrypoint(
+    _renamed_and_inverted={'action': 'store_false', 'dest': 'original_name'}
+)
+def inverse_flag(original_name=True):
+    """Test of advanced functionality, inspired by the discovery interface."""
+    return original_name
