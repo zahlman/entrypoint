@@ -14,7 +14,7 @@ def doc_example_2(**kwargs):
     return kwargs
 
 
-@entrypoint(fancy={'help': 'fancy help', 'type': int, 'keyword': True})
+@entrypoint(_fancy={'help': 'fancy help', 'type': int})
 def doc_example_3(fancy):
     print(f'This is a fancy way to end up with {fancy} (of type {type(fancy)})')
     return fancy
@@ -73,14 +73,13 @@ def tricky(description, name):
 @entrypoint(
     first='an ordinary argument defaulting to a placeholder string',
     args={'help': 'additional string arguments', 'nargs': '+', 'type': int},
-    x={'keyword': True, 'help': 'a keyword-only argument with no default'},
-    spam={'keyword': True, 'default': SUPPRESS, 'help': 'spam value'},
-    bacon={'keyword': True, 'default': SUPPRESS, 'help': 'bacon value'},
-    eggs={'keyword': True, 'default': SUPPRESS, 'help': 'eggs value'}
+    _x={'help': 'a keyword-only argument with no default'},
+    _spam={'default': SUPPRESS, 'help': 'spam value'},
+    _bacon={'default': SUPPRESS, 'help': 'bacon value'},
+    _eggs={'default': SUPPRESS, 'help': 'eggs value'}
 )
 def hard(first, *args, x, **kwargs):
     """A harder test of how command-line args are mapped to parameters."""
-    print('debug:', first, args, x, kwargs)
     return first, args, x, kwargs
 
 
@@ -95,8 +94,8 @@ def defaults(first, second='default', third='also default'):
 
 
 @entrypoint(
-    first={'keyword': True, 'help': 'first argument', 'type': int},
-    second={'keyword': True, 'help': 'second argument', 'type': int}
+    _first={'help': 'first argument', 'type': int},
+    _second={'help': 'second argument', 'type': int}
 )
 def positional_by_keyword(first, second):
     return first, second

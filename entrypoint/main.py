@@ -1,82 +1,63 @@
-from argparse import ArgumentParser
 from functools import partial
-from inspect import Parameter, signature, _empty
+from inspect import Parameter, signature as signature_of, _empty
+from .parser import DefaultParser
 
 
-_REQUIRED = _empty
-_UNSPECIFIED = _empty
 _REGISTRY = {}
 
 
-def _flag_names(name):
-    return [f'-{name[0]}', f'--{name.replace("_", "-")}']
-
-
-def _str_arg_data(name, parser_spec, func_spec):
-    spec = {'help': parser_spec}
-    if func_spec is None:
-        names = _flag_names(name)
+def _as_dict(decorator_spec):
+    if isinstance(decorator_spec, str):
+        return {'help': decorator_spec}
+    elif isinstance(decorator_spec, dict):
+        return decorator_spec.copy()
     else:
-        is_keyword = func_spec.kind == Parameter.VAR_KEYWORD
-        names = _flag_names(name) if is_keyword else [name]
-        if is_keyword:
-            spec['nargs'] = '?'
-        if func_spec.default != _REQUIRED:
-            spec['default'] = func_spec.default
-            spec['nargs'] = '?'
-        if func_spec.annotation != _UNSPECIFIED:
-            spec['type'] = func_spec.annotation
-    return names, spec
-
-
-def _dict_arg_data(name, parser_spec, func_spec):
-    spec = parser_spec.copy()
-    if spec.get('keyword', False):
-        del spec['keyword']
-        names = _flag_names(name)
-    else:
-        names = [name]
-    return names, spec
-
-
-def _arg_data(name, parser_spec, func_spec):
-    try:
-        handler = {str: _str_arg_data, dict: _dict_arg_data}[type(parser_spec)]
-    except KeyError:
         raise TypeError(
-            f'spec for parameter `{name}` must be either string or dict'
+            f'spec for parameter `{param_name}` must be either string or dict'
         )
-    return handler(name, parser_spec, func_spec)
 
 
-def _make_parser(name, desc, signature, param_specs):
-    impl = ArgumentParser(prog=name, description=desc)
-    for param_name, param_spec in param_specs.items():
-        names, spec = _arg_data(
-            param_name, param_spec, signature.parameters.get(param_name, None)
-        )
-        impl.add_argument(*names, **spec)
-    return lambda command_line: vars(impl.parse_args(command_line))
+def _add_to_parser(parser, param_name, decorator_spec, signature):
+    decorator_spec = _as_dict(decorator_spec)
+    add_method = parser.add_argument
+    if param_name.startswith('_'):
+        add_method, param_name = parser.add_option, param_name[1:]
+    param_info = signature.parameters.get(param_name, None)
+    param_spec = {}
+    if param_info is None:
+        add_method = parser.add_option
+    else:
+        if param_info.kind == Parameter.VAR_KEYWORD:
+            add_method = parser.add_option
+        if param_info.default is not _empty:
+            param_spec['default'] = param_info.default
+        annotation = param_info.annotation
+        if callable(annotation) and annotation is not _empty:
+            param_spec['type'] = annotation
+    add_method(param_name, decorator_spec, param_spec)
 
 
 def _setup_entrypoint(
-    invoke, make_parser, name, description, param_specs, func
+    dispatch, parser_class, name, description, param_specs, func
 ):
     name = name or func.__name__
-    desc = description
-    if desc is None: # but allow desc == ''
-        desc = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    parser = _make_parser(name, desc, signature(func), param_specs)
-    func.invoke = lambda command_line=None: invoke(func, parser(command_line))
+    if description is None: # but allow desc == ''
+        description = func.__doc__.splitlines()[0] if func.__doc__ else ''
+    parser = parser_class(
+        dispatch, func, {'name': name, 'description': description}
+    )
+    for param_name, decorator_spec in param_specs.items():
+        _add_to_parser(parser, param_name, decorator_spec, signature_of(func))
+    func.invoke = parser.invoke
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name
-    func.entrypoint_desc = desc
+    func.entrypoint_desc = description
     _REGISTRY[name] = f'{func.__module__}:{func.__name__}.invoke'
     return func
 
 
-def invoke(func, args):
+def default_dispatch(func, args):
     """Default invoker."""
     # Any errors that occur here should be treated as programming errors,
     # because they indicate that the interface created through the
@@ -88,7 +69,7 @@ def invoke(func, args):
     keywords = args
     has_kwargs_param = False
     explicit_keywords = {}
-    for name, param in signature(func).parameters.items():
+    for name, param in signature_of(func).parameters.items():
         assert not has_kwargs_param # just a sanity check.
         if param.kind == Parameter.VAR_KEYWORD:
             has_kwargs_param = True # this should be the last parameter.
@@ -121,10 +102,10 @@ def invoke(func, args):
 
 
 def entrypoint(
-    invoke=invoke, make_parser=_make_parser, name=None, description=None,
-    params=None, **kwargs
+    *, parser_class=DefaultParser, dispatch=default_dispatch,
+    name=None, description=None, params=None, **kwargs
 ):
     return partial(
-        _setup_entrypoint, invoke, make_parser,
+        _setup_entrypoint, dispatch, parser_class,
         name, description, params or kwargs
     )
