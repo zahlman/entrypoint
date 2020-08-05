@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "entrypoint"
-version = "0.3.0+44"
+version = "0.3.1+45"
 description = ""
 authors = [ "Karl Knechtel <karl.a.knechtel@gmail.com>",]
 
@@ -29,3 +29,4 @@ entrypoint-tricky-2 = "entrypoint.examples:tricky_2.invoke"
 entrypoint-hard = "entrypoint.examples:hard.invoke"
 entrypoint-defaults = "entrypoint.examples:defaults.invoke"
 entrypoint-positional-by-keyword = "entrypoint.examples:positional_by_keyword.invoke"
+entrypoint-inverse-flag = "entrypoint.examples:inverse_flag.invoke"
