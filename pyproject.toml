@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "entrypoint"
-version = "0.2.0+33"
+version = "0.3.0+44"
 description = ""
 authors = [ "Karl Knechtel <karl.a.knechtel@gmail.com>",]
 

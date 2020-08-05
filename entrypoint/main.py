@@ -101,6 +101,7 @@ def default_dispatch(func, args):
     if not has_kwargs_param:
         k = set(keywords.keys())
         assert not k, f'extra unusable command-line arguments found: {k}'
+    assert not set(explicit_keywords.keys()) & set(keywords.keys())
     return func(*positional, **explicit_keywords, **keywords)
 
 
