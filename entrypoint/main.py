@@ -1,5 +1,7 @@
 from functools import partial
+from inspect import signature as signature_of
 from .parser import DefaultParser
+from .dispatcher import DefaultDispatcher
 
 
 _REGISTRY = {}
@@ -13,7 +15,10 @@ def _setup_entrypoint(
     doc_top = func.__doc__.splitlines()[0] if func.__doc__ else ''
     description = parser_args.get('description', '') or doc_top
     parser_args['name'], parser_args['description'] = name, description
-    func.invoke = parser_class(func, parser_args, specs).invoke
+    func.invoke = parser_class(
+        DefaultDispatcher(signature_of(func).parameters.items()),
+        func, parser_args, specs
+    ).invoke
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name

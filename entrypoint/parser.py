@@ -3,8 +3,6 @@ from argparse import ArgumentParser
 from inspect import Parameter, signature as signature_of, _empty
 import sys
 
-from .dispatcher import DefaultDispatcher
-
 
 def _as_dict(decorator_spec):
     if isinstance(decorator_spec, str):
@@ -21,14 +19,14 @@ class Parser(ABC):
     """Abstract base class for Parsers.
 
     A Parser implements the core logic for an entrypoint decorator."""
-    def __init__(self, func: callable, config:dict, specs:dict):
+    def __init__(self, dispatcher, func: callable, config:dict, specs:dict):
         """Contructor.
         dispatcher -> maps parsed arguments onto the decorated function.
         func -> the decorated function.
         config -> additional configuration options.
         specs -> specifications for parameters to parse."""
         self._func = func
-        self._dispatcher = DefaultDispatcher(signature_of(func).parameters.items())
+        self._dispatcher = dispatcher
         self.setup(config)
         for param_name, spec in specs.items():
             self._add_from_decorator(param_name, spec)
