@@ -4,6 +4,121 @@ from inspect import Parameter, signature as signature_of, _empty
 import sys
 
 
+def _get_arg(code, args_dict):
+    literal, value = code
+    try:
+        return value if literal else args_dict[value]
+    except KeyError:
+        assert False, f'decorator failed to provide value for `{value}` arg'
+
+
+class _Dispatcher:
+    def __init__(self, param_specs:dict):
+        # Keep track of added options and arguments, and what they dispatch to.
+        # Dispatch entries are tuples of (bool, value)
+        # when the bool is true: the value will be passed as-is
+        # when the bool is false: the named key will be looked up.
+        self._positional = []
+        # VAR_POSITIONAL params can't have a default value. But we can also
+        # make a call with *args that are empty even if the function doesn't
+        # have such a parameter.
+        self._var_positional = (True, [])
+        self._keywords = {}
+        # If the function doesn't accept **kwargs, we need to track that fact.
+        # So we start out by not providing a dict for them.
+        self._var_keywords = None
+        # Map from parameter name to where it is in the signature.
+        # 0..N = index into positional;
+        # -1 = use var_positional;
+        # None = check keywords and use var_keywords otherwise.
+        self._param_mapping = {}
+        for name, param in param_specs:
+            assert self._var_keywords is None # just a sanity check.
+            if param.kind == Parameter.POSITIONAL_OR_KEYWORD:
+                self._param_mapping[param.name] = len(self._positional)
+                self._positional.append((True, param.default))
+            elif param.kind == Parameter.VAR_POSITIONAL:
+                # There is at most one parameter of this type.
+                assert -1 not in self._param_mapping.values()
+                assert param.default is _empty
+                self._param_mapping[param.name] = -1
+            elif param.kind == Parameter.KEYWORD_ONLY:
+                self._param_mapping[param.name] = None
+                self._keywords[param.name] = (True, param.default)
+            elif param.kind == Parameter.VAR_KEYWORD:
+                # We don't refer to this parameter by name;
+                # instead, extra parameters get dumped here.
+                # Since these are never supplied from a default, we use
+                # a set of names, and ignore cases where they aren't found.
+                self._var_keywords = set() # this should be the last parameter.
+            else:
+                # POSITIONAL_ONLY (C interface stuff) is disallowed for now.
+                assert False, \
+                f'`{param.kind!s}` parameter in function signature not allowed'
+
+
+    def add_argument(self, signature_name:str):
+        # Any errors that occur here are a programming error at startup,
+        # since it means the decorator can't possibly work properly.
+        # So we upgrade exceptions to assertions.
+        dispatch_code = (False, signature_name)
+        try:
+            where = self._param_mapping[signature_name]
+        except KeyError:
+            assert self._var_keywords is not None, ''.join((
+                f'decorator attempts to feed data to `{param_name}`',
+                'which is not a parameter of the function',
+                'and there is no **kwargs parameter'
+            ))
+            self._var_keywords.add(signature_name)
+        else:
+            # The parameter is known to exist, so locate it.
+            if where is None:
+                self._keywords[signature_name] = dispatch_code
+            elif where == -1:
+                self._var_positional = dispatch_code
+            else:
+                self._positional[where] = dispatch_code
+
+
+    def validate(self):
+        """Ensure that parameters without default values will get values
+        from the parsed arguments."""
+        invalid = (True, _empty)
+        invalid_positions = [
+            i for i, x in enumerate(self._positional) if x == invalid
+        ]
+        invalid_keywords = {
+            k for k, v in self._keywords.items() if v == invalid
+        }
+        assert not (invalid_positions or invalid_keywords), ' '.join((
+            f'positional parameters {invalid_positions} and/or'
+            f'keyword-only parameters {invalid_keywords} have neither'
+            f'a default value nor a way to be supplied by the decorator'
+        ))
+
+
+    def get_args(self, args_dict:dict):
+        """Transform parsed arguments into data usable to call the function."""
+        positional = [_get_arg(code, args_dict) for code in self._positional]
+        var_args = _get_arg(self._var_positional, args_dict)
+        try:
+            positional.extend(var_args)
+        except TypeError:
+            assert False, '*args value from decorator was not iterable'
+        keywords = {
+            name: _get_arg(code, args_dict)
+            for name, code in self._keywords.items()
+        }
+        if self._var_keywords is not None:
+            keywords.update(
+                (name, args_dict[name])
+                for name in self._var_keywords
+                if name in args_dict
+            )
+        return positional, keywords
+
+
 class Parser(ABC):
     """Abstract base class for Parsers.
 
@@ -14,6 +129,7 @@ class Parser(ABC):
         func -> the decorated function.
         config -> additional configuration options."""
         self._func = func
+        self._dispatcher = _Dispatcher(signature_of(func).parameters.items())
 
 
     @classmethod
@@ -21,7 +137,7 @@ class Parser(ABC):
         """Names of keyword arguments used for initialization.
         The decorator will pass these to the constructor rather than using
         them for add_option or add_argument calls."""
-        return set() 
+        return set()
 
 
     @abstractmethod
@@ -52,65 +168,18 @@ class Parser(ABC):
         raise NotImplementedError
 
 
-    def _get_dispatched_args(self, parsed_args):
-        """Default invoker."""
-        # Any errors that occur here should be treated as programming errors,
-        # because they indicate that the interface created through the
-        # entrypoint decorator is broken (does not reliably map to the
-        # underlying function's parameters). So we use assertions.
-        positional = []
-        # `parsed_args` were created locally, so we don't need a copy
-        # even though we delete keys.
-        keywords = parsed_args
-        has_kwargs_param = False
-        explicit_keywords = {}
-        for name, param in signature_of(self._func).parameters.items():
-            assert not has_kwargs_param # just a sanity check.
-            if param.kind == Parameter.VAR_KEYWORD:
-                has_kwargs_param = True # this should be the last parameter.
-                continue
-            if name in keywords:
-                arg = keywords[name]
-                del keywords[name]
-            else:
-                assert param.default != _empty, \
-                f'command-line args missing necessary value for `{name}`'
-                arg = keywords.get(name, param.default)
-            if param.kind == Parameter.VAR_POSITIONAL:
-                try:
-                    iter(arg)
-                except TypeError:
-                    assert False, \
-                    'command-line arg for VAR_POSITIONAL parameter must be iterable'
-                positional.extend(arg)
-            elif param.kind == Parameter.POSITIONAL_OR_KEYWORD:
-                positional.append(arg)
-            elif param.kind == Parameter.KEYWORD_ONLY:
-                explicit_keywords[name] = arg
-            else:
-                # POSITIONAL_ONLY (C interface stuff) is disallowed for now.
-                assert False, \
-                f'`{param.kind!s}` parameter in function signature not allowed'
-        if not has_kwargs_param:
-            k = set(keywords.keys())
-            assert not k, f'extra unusable command-line arguments found: {k}'
-        assert not set(explicit_keywords.keys()) & set(keywords.keys())
-        return positional, explicit_keywords, keywords
-
-
-    def call_with(self, positional:list, explicit:dict, keywords:dict):
+    def call_with(self, positional:list, keywords:dict):
         """Default hook for calling the decorated function.
         Displays the return value (on stdout) or exception message (on stderr)
         and exits with an appropriate return code.
-        
+
         positional -> positional arguments for the call.
-        explicit -> keyword-only arguments for the call.
-        keywords -> `**kwargs` arguments for the call.
+        explicit -> keyword arguments for the call.
         Modify any of these prior to calling at your own risk.
         You can access the function to call as `self._func`.
         """
         try:
-            print(self._func(*positional, **explicit, **keywords))
+            print(self._func(*positional, **keywords))
             sys.exit(0)
         except Exception as e:
             print(e, file=sys.stderr)
@@ -121,16 +190,18 @@ class Parser(ABC):
         """Call the decorated function using parsed arguments.
 
         command_line -> list of tokens to parse, or None (use `sys.argv`).
-        
+
         This should not be overridden - `call_with` is the hook you want.
         This will ordinarily not return; `call_with` should use `sys.exit`
         to give a return value back to the OS."""
-        self.call_with(*self._get_dispatched_args(self.parse(command_line)))
+        # FIXME: this should happen when the decorator is applied.
+        self._dispatcher.validate()
+        self.call_with(*self._dispatcher.get_args(self.parse(command_line)))
 
 
 class DefaultParser(Parser):
     """Default implementation of a Parser.
-    
+
     Delegates to an `argparse.ArgumentParser` to do the work."""
     def __init__(self, func:callable, config:dict):
         super().__init__(func, config)
@@ -145,6 +216,7 @@ class DefaultParser(Parser):
             f'-{name[0]}', f'--{name.replace("_", "-")}',
             **{**param_spec, **decorator_spec}
         )
+        self._dispatcher.add_argument(decorator_spec.get('dest', name))
 
 
     def add_argument(self, name, decorator_spec, param_spec):
@@ -152,6 +224,7 @@ class DefaultParser(Parser):
         self._impl.add_argument(
             name, **{**param_spec, **extra_spec, **decorator_spec}
         )
+        self._dispatcher.add_argument(decorator_spec.get('dest', name))
 
 
     def parse(self, command_line):
