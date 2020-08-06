@@ -57,7 +57,8 @@ class _Dispatcher:
                 f'`{param.kind!s}` parameter in function signature not allowed'
 
 
-    def add_argument(self, signature_name:str):
+    def guarantee(self, signature_name:str):
+        """Claim that the named parameter is supplied by the parser."""
         # Any errors that occur here are a programming error at startup,
         # since it means the decorator can't possibly work properly.
         # So we upgrade exceptions to assertions.
@@ -151,6 +152,10 @@ class Parser(ABC):
         return set()
 
 
+    def validate(self):
+        self._dispatcher.validate()
+
+
     def add_from_decorator(self, param_name, spec):
         # prepare two specs: one from modifying the decorator's spec, and one
         # representing additional requirements from the parameter's signature.
@@ -171,26 +176,34 @@ class Parser(ABC):
             annotation = param_info.annotation
             if callable(annotation) and annotation is not _empty:
                 param_spec['type'] = annotation
-        add_method(param_name, decorator_spec, param_spec)
+        self._dispatcher.guarantee(
+            add_method(param_name, decorator_spec, param_spec)
+        )
 
 
     @abstractmethod
-    def add_option(self, name:str, decorator_spec:dict, param_spec:dict):
+    def add_option(self, name:str, deco_spec:dict, param_spec:dict) -> str:
         """Specify a command-line option.
+
         name -> name of the intended recipient parameter.
-        decorator_spec -> parsing options from the decorator.
-        Format and interpretation is up to the concrete parser.
-        param_spec -> may contain 'default' and/or 'type' specifications."""
+        deco_spec -> parsing options from the decorator.
+        (Format and interpretation is up to the concrete parser.)
+        param_spec -> may contain 'default' and/or 'type' specifications.
+
+        Returns the name of the parameter that will be fed by this option."""
         raise NotImplementedError
 
 
     @abstractmethod
-    def add_argument(self, name:str, decorator_spec:dict, param_spec:dict):
+    def add_argument(self, name:str, deco_spec:dict, param_spec:dict) -> str:
         """Specify a command-line argument.
+
         name -> name of the intended recipient parameter.
-        decorator_spec -> parsing options from the decorator.
-        Format and interpretation is up to the concrete parser.
-        param_spec -> may contain 'default' and/or 'type' specifications."""
+        deco_spec -> parsing options from the decorator.
+        (Format and interpretation is up to the concrete parser.)
+        param_spec -> may contain 'default' and/or 'type' specifications.
+
+        Returns the name of the parameter that will be fed by this argument."""
         raise NotImplementedError
 
 
@@ -229,7 +242,6 @@ class Parser(ABC):
         This will ordinarily not return; `call_with` should use `sys.exit`
         to give a return value back to the OS."""
         # FIXME: this should happen when the decorator is applied.
-        self._dispatcher.validate()
         self.call_with(*self._dispatcher.get_args(self.parse(command_line)))
 
 
@@ -245,20 +257,20 @@ class DefaultParser(Parser):
         )
 
 
-    def add_option(self, name, decorator_spec, param_spec):
+    def add_option(self, name:str, deco_spec:dict, param_spec:dict) -> str:
         self._impl.add_argument(
             f'-{name[0]}', f'--{name.replace("_", "-")}',
-            **{**param_spec, **decorator_spec}
+            **{**param_spec, **deco_spec}
         )
-        self._dispatcher.add_argument(decorator_spec.get('dest', name))
+        return deco_spec.get('dest', name)
 
 
-    def add_argument(self, name, decorator_spec, param_spec):
+    def add_argument(self, name:str, deco_spec:dict, param_spec:dict) -> str:
         extra_spec = {'nargs': '?'} if 'default' in param_spec else {}
         self._impl.add_argument(
-            name, **{**param_spec, **extra_spec, **decorator_spec}
+            name, **{**param_spec, **extra_spec, **deco_spec}
         )
-        self._dispatcher.add_argument(decorator_spec.get('dest', name))
+        return deco_spec.get('dest', name)
 
 
     def parse(self, command_line):

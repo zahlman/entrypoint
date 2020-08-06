@@ -17,6 +17,7 @@ def _setup_entrypoint(
     parser = parser_class(func, parser_args)
     for param_name, spec in specs.items():
         parser.add_from_decorator(param_name, spec)
+    parser.validate()
     func.invoke = parser.invoke
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
