@@ -6,14 +6,20 @@ from entrypoint.examples import (
 import pytest
 
 
-def _commandline(func, s):
-    return func.invoke(s.split())
-
-
-def _exited(capsys, func, s):
-    with pytest.raises(SystemExit):
+def _displayed(capsys, func, s):
+    with pytest.raises(SystemExit) as e:
         func.invoke(s.split())
-    return capsys.readouterr()
+        code = e.args[0]
+        assert isinstance(code, int) and code == 0
+    return capsys.readouterr().out.splitlines()
+
+
+def _failed_with(capsys, func, s):
+    with pytest.raises(SystemExit) as e:
+        func.invoke(s.split())
+        code = e.args[0]
+        assert isinstance(code, int) and code != 0
+    return capsys.readouterr().err.splitlines()
 
 
 def test_from_python():
@@ -31,24 +37,34 @@ def test_from_python():
     assert empty.entrypoint_desc is not None
 
 
-def test_doc_examples():
+def test_doc_examples(capsys):
     """Verify the examples given in the documentation, with proper input.
     We don't bother checking the printed output, just the returned values."""
-    assert _commandline(doc_example_1, '1') == 1
-    assert _commandline(doc_example_2, '--arg=normal -k tricky') == {
-        'arg': 'normal', 'kwargs': 'tricky'
-    }
-    assert _commandline(doc_example_3, '--fancy=1') == 1
-    assert _commandline(doc_example_3, '') is None
-    assert _commandline(doc_example_4, '1 2 3') == (1, 2, 3)
-    assert _commandline(doc_example_4, '') == ()
+    assert _displayed(capsys, doc_example_1, '1') == [
+        "arg=1 of type <class 'int'>"
+    ]
+    assert _displayed(capsys, doc_example_2, '--arg=normal -k tricky') == [
+        "kwargs['arg']=normal, kwargs['kwargs']=tricky"
+    ]
+    assert _displayed(capsys, doc_example_3, '--fancy=1') == [
+        "This is a fancy way to end up with 1 (of type <class 'int'>)"
+    ]
+    assert _displayed(capsys, doc_example_3, '') == [
+        "This is a fancy way to end up with None (of type <class 'NoneType'>)"
+    ]
+    assert _displayed(capsys, doc_example_4, '1 2 3') == [
+        'Finally, a test of variable positional arguments: (1, 2, 3)'
+    ]
+    assert _displayed(capsys, doc_example_4, '') == [
+        'Finally, a test of variable positional arguments: ()'
+    ]
 
 
 @pytest.mark.parametrize('func', [example, to_rename])
-def test_good_commandline(func):
+def test_good_commandline(capsys, func):
     """Verify the CLI for some valid command lines.
     We call the .invoke methods directly for all testing."""
-    assert _commandline(func, '4 5 6') == 'foo=4, bar=5, baz=6'
+    assert _displayed(capsys, func, '4 5 6') == ['foo=4, bar=5, baz=6']
 
 
 @pytest.mark.parametrize('func', [example, to_rename])
@@ -56,7 +72,7 @@ def test_good_commandline(func):
 def test_bad_commandlines(capsys, func, s):
     """Verify that an invalid command line causes the program to exit
     and print correct information in a 'usage' message."""
-    output = _exited(capsys, func, s).err.splitlines()
+    output = _failed_with(capsys, func, s)
     assert output[0].startswith(f'usage: {func.entrypoint_name}')
     assert output[1].startswith(f'{func.entrypoint_name}: error:')
 
@@ -65,32 +81,27 @@ def test_bad_commandlines(capsys, func, s):
 @pytest.mark.parametrize('s', ['-h', '--help'])
 def test_help_commandlines(capsys, func, s):
     """Verify that automatic 'help' options work correctly."""
-    output = _exited(capsys, func, s).out.splitlines()
+    output = _displayed(capsys, func, s)
     assert output[0].startswith(f'usage: {func.entrypoint_name}')
-    assert not output[1] # should be a blank line
+    assert output[1] == ''
     assert output[2] == func.entrypoint_desc
 
 
-def test_hard():
+def test_hard(capsys):
     """Test for a relatively complex case."""
-    first, args, x, kwargs = _commandline(
-        hard, 'first 1 2 3 -x y --spam=lovely'
-    )
-    assert first == 'first'
-    assert args == (1, 2, 3)
-    assert x == 'y'
+    assert _displayed(
+        capsys, hard, 'first 1 2 3 -x y --spam=lovely'
+    ) == ["('first', (1, 2, 3), 'y', [('spam', 'lovely')])"]
     # `bacon` and `eggs` should be suppressed by argparse.
-    assert kwargs == {'spam': 'lovely'}
 
 
-def test_defaults():
+def test_defaults(capsys):
     """Test that default values can be provided both implicitly and explicitly,
     and that explicit settings (via the decorator) override implicit ones
     (via the function's signature)."""
-    first, second, third = _commandline(defaults, 'first')
-    assert first == 'first'
-    assert second == 'default'
-    assert third == 'overridden'
+    assert _displayed(capsys, defaults, 'first') == [
+        "('first', 'default', 'overridden')"
+    ]
 
 
 @pytest.mark.parametrize('s', [
@@ -99,15 +110,16 @@ def test_defaults():
     '-f 1 --second 2', '--second 2 -f 1',
     '--first 1 --second 2', '--second 2 --first 1'
 ])
-def test_positional_by_keyword(s):
+def test_positional_by_keyword(capsys, s):
     """Test that keyword/flags arguments work and can be passed out of order."""
-    assert _commandline(positional_by_keyword, s) == (1, 2)
+    assert _displayed(capsys, positional_by_keyword, s) == ['(1, 2)']
 
 
 def test_inverse_flag(capsys):
-    assert _commandline(inverse_flag, '')
-    assert not _commandline(inverse_flag, '-r')
-    assert not _commandline(inverse_flag, '--renamed-and-inverted')
+    func = inverse_flag
+    assert _displayed(capsys, func, '') == ['True']
+    assert _displayed(capsys, func, '-r') == ['False']
+    assert _displayed(capsys, func, '--renamed-and-inverted') == ['False']
     # Make sure it doesn't also work with underscores.
     bad_arg = '--renamed_and_inverted'
-    assert bad_arg in _exited(capsys, inverse_flag, bad_arg).err
+    assert bad_arg in _failed_with(capsys, func, bad_arg)[1]

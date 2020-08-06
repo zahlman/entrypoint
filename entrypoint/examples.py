@@ -4,26 +4,22 @@ from . import entrypoint
 
 @entrypoint(arg='an argument')
 def doc_example_1(arg:int):
-    print(f'Doc example 1: arg={arg} of type {type(arg)}')
-    return arg
+    return f'arg={arg} of type {type(arg)}'
 
 
 @entrypoint(arg='a normal argument', kwargs='a tricky argument')
 def doc_example_2(**kwargs):
-    print(f'Doc example 2: kwargs={kwargs}')
-    return kwargs
+    return f"kwargs['arg']={kwargs['arg']}, kwargs['kwargs']={kwargs['kwargs']}"
 
 
 @entrypoint(_fancy={'help': 'fancy help', 'type': int})
 def doc_example_3(fancy):
-    print(f'This is a fancy way to end up with {fancy} (of type {type(fancy)})')
-    return fancy
+    return f'This is a fancy way to end up with {fancy} (of type {type(fancy)})'
 
 
 @entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
 def doc_example_4(*args):
-    print(f'Finally, a test of variable positional arguments: {args}')
-    return args
+    return f'Finally, a test of variable positional arguments: {args}'
 
 
 # The computed description should always be a string, not None.
@@ -92,7 +88,7 @@ def tricky_2(dispatch, parser_class, parser_args, specs):
 )
 def hard(first, *args, x, **kwargs):
     """A harder test of how command-line args are mapped to parameters."""
-    return first, args, x, kwargs
+    return first, args, x, sorted(kwargs.items()) 
 
 
 @entrypoint(

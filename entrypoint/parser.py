@@ -109,7 +109,12 @@ class Parser(ABC):
         Modify any of these prior to calling at your own risk.
         You can access the function to call as `self._func`.
         """
-        return self._func(*positional, **explicit, **keywords)
+        try:
+            print(self._func(*positional, **explicit, **keywords))
+            sys.exit(0)
+        except Exception as e:
+            print(e, file=sys.stderr)
+            sys.exit(1)
 
 
     def invoke(self, command_line=None):
@@ -120,9 +125,7 @@ class Parser(ABC):
         This should not be overridden - `call_with` is the hook you want.
         This will ordinarily not return; `call_with` should use `sys.exit`
         to give a return value back to the OS."""
-        return self.call_with(
-            *self._get_dispatched_args(self.parse(command_line))
-        )
+        self.call_with(*self._get_dispatched_args(self.parse(command_line)))
 
 
 class DefaultParser(Parser):
