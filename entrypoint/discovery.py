@@ -3,7 +3,7 @@ import toml
 from . import main
 
 
-def is_module_or_package(path, name, ignore):
+def _is_module_or_package(path, name, ignore):
     if os.path.isdir(os.path.join(path, name)):
         return None if name in ignore else name
     else:
@@ -16,7 +16,7 @@ def _load_everything(qualname, ignore):
     if hasattr(module_or_package, '__path__'):
         for path in module_or_package.__path__:
             for name in os.listdir(path):
-                fixed_name = is_module_or_package(path, name, ignore)
+                fixed_name = _is_module_or_package(path, name, ignore)
                 if fixed_name is not None:
                     _load_everything(f'{qualname}.{fixed_name}', ignore)
 
