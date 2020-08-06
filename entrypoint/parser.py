@@ -35,20 +35,6 @@ class Parser(ABC):
         self._dispatcher.validate()
 
 
-    @abstractmethod
-    def setup(self, config:dict):
-        """Prepare to interpret parameter specifications."""
-        raise NotImplementedError
-
-
-    @classmethod
-    def config_keys(cls) -> set:
-        """Names of keyword arguments used for initialization.
-        The decorator will pass these to the constructor rather than using
-        them for add_option or add_argument calls."""
-        return set()
-
-
     def _add_from_decorator(self, param_name, spec):
         # prepare two specs: one from modifying the decorator's spec, and one
         # representing additional requirements from the parameter's signature.
@@ -72,6 +58,42 @@ class Parser(ABC):
         self._dispatcher.guarantee(
             add_method(param_name, decorator_spec, param_spec)
         )
+
+
+    def raw_call(self, parsed_args):
+        """Call the decorated function with no setup or teardown.
+
+        parsed_args -> result from parsing the command line.
+        Override `call_with` to wrap this process as desired."""
+        return self._dispatcher.invoke(self._func, parsed_args)
+
+
+    def invoke(self, command_line=None):
+        """Call the decorated function using parsed arguments.
+
+        command_line -> list of tokens to parse, or None (use `sys.argv`).
+
+        This should not be overridden - `call_with` is the hook you want.
+        This will ordinarily not return; `call_with` should use `sys.exit`
+        to give a return value back to the OS."""
+        self.call_with(self.parse(command_line))
+
+
+    # Hooks for derived classes to implement.
+    @classmethod
+    def config_keys(cls) -> set:
+        """Names of keyword arguments used for initialization.
+        The decorator will pass these to the constructor rather than using
+        them for add_option or add_argument calls.
+        Override this with any config options needed other than `name`
+        and `description` for initialization."""
+        return set()
+
+
+    @abstractmethod
+    def setup(self, config:dict):
+        """Prepare to interpret parameter specifications."""
+        raise NotImplementedError
 
 
     @abstractmethod
@@ -108,34 +130,21 @@ class Parser(ABC):
         raise NotImplementedError
 
 
-    def call_with(self, positional:list, keywords:dict):
+    def call_with(self, parsed_args):
         """Default hook for calling the decorated function.
         Displays the return value (on stdout) or exception message (on stderr)
         and exits with an appropriate return code.
 
-        positional -> positional arguments for the call.
-        explicit -> keyword arguments for the call.
-        Modify any of these prior to calling at your own risk.
-        You can access the function to call as `self._func`.
-        """
+        parsed_args -> result from the .parse method.
+        Override this to change the setup and teardown behaviour, for example,
+        to change the top-level exception handling.
+        Use `self.raw_call` to invoke the underlying decorated function."""
         try:
-            print(self._func(*positional, **keywords))
+            print(self.raw_call(parsed_args))
             sys.exit(0)
         except Exception as e:
             print(e, file=sys.stderr)
             sys.exit(1)
-
-
-    def invoke(self, command_line=None):
-        """Call the decorated function using parsed arguments.
-
-        command_line -> list of tokens to parse, or None (use `sys.argv`).
-
-        This should not be overridden - `call_with` is the hook you want.
-        This will ordinarily not return; `call_with` should use `sys.exit`
-        to give a return value back to the OS."""
-        # FIXME: this should happen when the decorator is applied.
-        self.call_with(*self._dispatcher.get_args(self.parse(command_line)))
 
 
 class DefaultParser(Parser):

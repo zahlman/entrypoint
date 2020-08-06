@@ -102,7 +102,7 @@ class Dispatcher:
         ))
 
 
-    def get_args(self, args_dict:dict):
+    def invoke(self, func, args_dict:dict):
         """Transform parsed argument dict into function-call args."""
         positional = [_get_arg(code, args_dict) for code in self._positional]
         var_args = _get_arg(self._var_positional, args_dict)
@@ -120,4 +120,4 @@ class Dispatcher:
                 for name in self._var_keywords
                 if name in args_dict
             )
-        return positional, keywords
+        return func(*positional, **keywords)
