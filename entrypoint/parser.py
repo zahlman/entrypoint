@@ -1,7 +1,8 @@
+from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 
 
-class Parser:
+class Parser(ABC):
     """Abstract base class for Parsers.
 
     A Parser implements the core logic for an entrypoint decorator."""
@@ -22,6 +23,7 @@ class Parser:
         return {'name', 'description'}
 
 
+    @abstractmethod
     def add_option(self, name:str, decorator_spec:dict, param_spec:dict):
         """Specify a command-line option.
         name -> name of the intended recipient parameter.
@@ -31,6 +33,7 @@ class Parser:
         raise NotImplementedError
 
 
+    @abstractmethod
     def add_argument(self, name:str, decorator_spec:dict, param_spec:dict):
         """Specify a command-line option.
         name -> name of the intended recipient parameter.
@@ -40,6 +43,7 @@ class Parser:
         raise NotImplementedError
 
 
+    @abstractmethod
     def parse(self, command_line) -> dict:
         """Parse the command-line contents.
         command_line -> list of tokens to parse, or None (use `sys.argv`).
