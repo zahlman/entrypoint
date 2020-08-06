@@ -92,8 +92,8 @@ class _Dispatcher:
             k for k, v in self._keywords.items() if v == invalid
         }
         assert not (invalid_positions or invalid_keywords), ' '.join((
-            f'positional parameters {invalid_positions} and/or'
-            f'keyword-only parameters {invalid_keywords} have neither'
+            f'positional parameters {invalid_positions} and/or',
+            f'keyword-only parameters {invalid_keywords} have neither',
             f'a default value nor a way to be supplied by the decorator'
         ))
 
