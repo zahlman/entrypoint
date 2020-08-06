@@ -8,7 +8,7 @@ _REGISTRY = {}
 
 
 def _setup_entrypoint(
-    parser_class, parser_args, specs, func
+    dispatch_class, parser_class, parser_args, specs, func
 ):
     # set defaults if missing or empty
     name = parser_args.get('name', '') or func.__name__
@@ -16,7 +16,7 @@ def _setup_entrypoint(
     description = parser_args.get('description', '') or doc_top
     parser_args['name'], parser_args['description'] = name, description
     func.invoke = parser_class(
-        DefaultDispatcher(signature_of(func).parameters.items()),
+        dispatch_class(signature_of(func).parameters.items()),
         func, parser_args, specs
     ).invoke
     # Make this info accessible later, for generating pyproject.toml content
@@ -28,7 +28,8 @@ def _setup_entrypoint(
 
 
 def entrypoint(
-    *, parser_class=DefaultParser, parser_args=None, specs=None, **kwargs
+    *, dispatch_class=DefaultDispatcher, parser_class=DefaultParser,
+    parser_args=None, specs=None, **kwargs
 ):
     parser_args = {} if parser_args is None else parser_args.copy()
     specs = {} if specs is None else specs.copy()
@@ -36,5 +37,5 @@ def entrypoint(
     for key, value in kwargs.items():
         (parser_args if key in to_parser else specs)[key] = value
     return partial(
-        _setup_entrypoint, parser_class, parser_args, specs
+        _setup_entrypoint, dispatch_class, parser_class, parser_args, specs
     )
