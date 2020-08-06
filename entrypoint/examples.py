@@ -66,16 +66,8 @@ def tricky_1(description, name):
     pass
 
 
-@entrypoint(
-    parser_args={
-        'dispatch': 'an argument', 'parser_class': 'another argument',
-        'parser_args': 'yet another argument', 'specs': 'the last argument'
-    }
-)
-def tricky_2(dispatch, parser_class, parser_args, specs):
-    """Test the use of `parser_args` to disambiguate decorator arguments."""
-    # Just the fact that this doesn't crash at startup constitutes the test.
-    pass
+# TODO: set up a test with a custom Parser that expects args with special
+# names, to verify that `parser_args` works properly.
 
 
 @entrypoint(
