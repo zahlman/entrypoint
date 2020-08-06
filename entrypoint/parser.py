@@ -119,6 +119,17 @@ class _Dispatcher:
         return positional, keywords
 
 
+def _as_dict(decorator_spec):
+    if isinstance(decorator_spec, str):
+        return {'help': decorator_spec}
+    elif isinstance(decorator_spec, dict):
+        return decorator_spec.copy()
+    else:
+        raise TypeError(
+            f'spec for parameter `{param_name}` must be either string or dict'
+        )
+
+
 class Parser(ABC):
     """Abstract base class for Parsers.
 
@@ -138,6 +149,29 @@ class Parser(ABC):
         The decorator will pass these to the constructor rather than using
         them for add_option or add_argument calls."""
         return set()
+
+
+    def add_from_decorator(self, param_name, spec):
+        # prepare two specs: one from modifying the decorator's spec, and one
+        # representing additional requirements from the parameter's signature.
+        signature = signature_of(self._func)
+        decorator_spec = _as_dict(spec)
+        add_method = self.add_argument
+        if param_name.startswith('_'):
+            add_method, param_name = self.add_option, param_name[1:]
+        param_info = signature.parameters.get(param_name, None)
+        param_spec = {}
+        if param_info is None:
+            add_method = self.add_option
+        else:
+            if param_info.kind == Parameter.VAR_KEYWORD:
+                add_method = self.add_option
+            if param_info.default is not _empty:
+                param_spec['default'] = param_info.default
+            annotation = param_info.annotation
+            if callable(annotation) and annotation is not _empty:
+                param_spec['type'] = annotation
+        add_method(param_name, decorator_spec, param_spec)
 
 
     @abstractmethod
