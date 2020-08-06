@@ -111,7 +111,7 @@ def entrypoint(
 ):
     parser_args = {} if parser_args is None else parser_args.copy()
     specs = {} if specs is None else specs.copy()
-    to_parser = parser_class.config_keys()
+    to_parser = parser_class.config_keys() | {'name', 'description'}
     for key, value in kwargs.items():
         (parser_args if key in to_parser else specs)[key] = value
     return partial(

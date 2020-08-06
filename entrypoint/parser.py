@@ -20,7 +20,7 @@ class Parser(ABC):
         """Names of keyword arguments used for initialization.
         The decorator will pass these to the constructor rather than using
         them for add_option or add_argument calls."""
-        return {'name', 'description'}
+        return set() 
 
 
     @abstractmethod
