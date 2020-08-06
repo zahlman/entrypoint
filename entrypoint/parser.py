@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from inspect import Parameter, signature as signature_of, _empty
 import sys
 
-from .dispatcher import Dispatcher
+from .dispatcher import DefaultDispatcher
 
 
 def _as_dict(decorator_spec):
@@ -28,7 +28,7 @@ class Parser(ABC):
         config -> additional configuration options.
         specs -> specifications for parameters to parse."""
         self._func = func
-        self._dispatcher = Dispatcher(signature_of(func).parameters.items())
+        self._dispatcher = DefaultDispatcher(signature_of(func).parameters.items())
         self.setup(config)
         for param_name, spec in specs.items():
             self._add_from_decorator(param_name, spec)

@@ -1,4 +1,42 @@
+from abc import ABC, abstractmethod
 from inspect import Parameter, _empty
+
+
+class Dispatcher(ABC):
+    @abstractmethod
+    def __init__(self, param_specs:dict):
+        """Constructor.
+
+        param_specs -> information about parameters of the decorated function.
+        Mapping from parameter name to `inspect.Parameter` instances."""
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def guarantee(self, signature_name:str):
+        """Called to indicate that a given parameter's value will be supplied
+        by the parser.
+
+        signature_name -> name of the parameter."""
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def validate(self):
+        """Ensure that parameters without default values will get values
+        from the parsed arguments. Raises an exception otherwise."""
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def invoke(self, func, args_dict:dict):
+        """Call the underlying function with appropriate arguments assigned
+        to the appropriate places.
+
+        func -> the decorated function.
+        args_dict -> parsed arguments from the parser.
+        Should return the result from the call to `func`."""
+        raise NotImplementedError
 
 
 def _get_arg(code, args_dict):
@@ -9,7 +47,7 @@ def _get_arg(code, args_dict):
         assert False, f'decorator failed to provide value for `{value}` arg'
 
 
-class Dispatcher:
+class DefaultDispatcher(Dispatcher):
     def __init__(self, param_specs):
         # Keep track of added options and arguments, and what they dispatch to.
         # Dispatch entries are tuples of (bool, value)
@@ -61,7 +99,6 @@ class Dispatcher:
 
 
     def guarantee(self, signature_name:str):
-        """Claim that the named parameter is supplied by the parser."""
         # Any errors that occur here are a programming error at startup,
         # since it means the decorator can't possibly work properly.
         # So we upgrade exceptions to assertions.
@@ -86,8 +123,6 @@ class Dispatcher:
 
 
     def validate(self):
-        """Ensure that parameters without default values will get values
-        from the parsed arguments."""
         invalid = (True, _empty)
         invalid_positions = [
             i for i, x in enumerate(self._positional) if x == invalid
@@ -103,7 +138,6 @@ class Dispatcher:
 
 
     def invoke(self, func, args_dict:dict):
-        """Transform parsed argument dict into function-call args."""
         positional = [_get_arg(code, args_dict) for code in self._positional]
         var_args = _get_arg(self._var_positional, args_dict)
         try:
