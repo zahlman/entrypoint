@@ -139,12 +139,20 @@ class Parser(ABC):
         """Contructor.
         dispatcher -> maps parsed arguments onto the decorated function.
         func -> the decorated function.
-        config -> additional configuration options."""
+        config -> additional configuration options.
+        specs -> specifications for parameters to parse."""
         self._func = func
         self._dispatcher = _Dispatcher(signature_of(func).parameters.items())
+        self.setup(config)
         for param_name, spec in specs.items():
             self._add_from_decorator(param_name, spec)
         self._dispatcher.validate()
+
+
+    @abstractmethod
+    def setup(self, config:dict):
+        """Prepare to interpret parameter specifications."""
+        raise NotImplementedError
 
 
     @classmethod
@@ -248,12 +256,11 @@ class DefaultParser(Parser):
     """Default implementation of a Parser.
 
     Delegates to an `argparse.ArgumentParser` to do the work."""
-    def __init__(self, func:callable, config:dict, specs:dict):
+    def setup(self, config:dict):
         self._impl = ArgumentParser(
             prog=config.get('name', ''),
             description=config.get('description', '')
         )
-        super().__init__(func, config, specs)
 
 
     def add_option(self, name:str, deco_spec:dict, param_spec:dict) -> str:
