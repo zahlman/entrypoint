@@ -1,5 +1,4 @@
 from functools import partial
-from inspect import Parameter, signature as signature_of, _empty
 from .parser import DefaultParser
 
 
