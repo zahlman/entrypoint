@@ -14,11 +14,7 @@ def _setup_entrypoint(
     doc_top = func.__doc__.splitlines()[0] if func.__doc__ else ''
     description = parser_args.get('description', '') or doc_top
     parser_args['name'], parser_args['description'] = name, description
-    parser = parser_class(func, parser_args)
-    for param_name, spec in specs.items():
-        parser.add_from_decorator(param_name, spec)
-    parser.validate()
-    func.invoke = parser.invoke
+    func.invoke = parser_class(func, parser_args, specs).invoke
     # Make this info accessible later, for generating pyproject.toml content
     # and for testing purposes.
     func.entrypoint_name = name

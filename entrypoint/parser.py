@@ -135,13 +135,16 @@ class Parser(ABC):
     """Abstract base class for Parsers.
 
     A Parser implements the core logic for an entrypoint decorator."""
-    def __init__(self, func: callable, config:dict):
+    def __init__(self, func: callable, config:dict, specs:dict):
         """Contructor.
         dispatcher -> maps parsed arguments onto the decorated function.
         func -> the decorated function.
         config -> additional configuration options."""
         self._func = func
         self._dispatcher = _Dispatcher(signature_of(func).parameters.items())
+        for param_name, spec in specs.items():
+            self._add_from_decorator(param_name, spec)
+        self._dispatcher.validate()
 
 
     @classmethod
@@ -152,11 +155,7 @@ class Parser(ABC):
         return set()
 
 
-    def validate(self):
-        self._dispatcher.validate()
-
-
-    def add_from_decorator(self, param_name, spec):
+    def _add_from_decorator(self, param_name, spec):
         # prepare two specs: one from modifying the decorator's spec, and one
         # representing additional requirements from the parameter's signature.
         signature = signature_of(self._func)
@@ -249,12 +248,12 @@ class DefaultParser(Parser):
     """Default implementation of a Parser.
 
     Delegates to an `argparse.ArgumentParser` to do the work."""
-    def __init__(self, func:callable, config:dict):
-        super().__init__(func, config)
+    def __init__(self, func:callable, config:dict, specs:dict):
         self._impl = ArgumentParser(
             prog=config.get('name', ''),
             description=config.get('description', '')
         )
+        super().__init__(func, config, specs)
 
 
     def add_option(self, name:str, deco_spec:dict, param_spec:dict) -> str:
