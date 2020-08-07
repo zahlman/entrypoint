@@ -1,4 +1,4 @@
-__version__ = "0.5.0+57"
+__version__ = "0.6.0+64"
 
 
 from .main import *
