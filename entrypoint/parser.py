@@ -138,7 +138,9 @@ class Parser(ABC):
         to change the top-level exception handling.
         Use `self.raw_call` to invoke the underlying decorated function."""
         try:
-            print(self.raw_call(parsed_args))
+            result = self.raw_call(parsed_args)
+            if result is not None:
+                print(result)
             sys.exit(0)
         except Exception as e:
             print(e, file=sys.stderr)

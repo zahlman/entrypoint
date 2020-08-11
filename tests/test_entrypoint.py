@@ -60,6 +60,11 @@ def test_doc_examples(capsys):
     ]
 
 
+def test_empty_no_input(capsys):
+    assert not _displayed(capsys, empty, '')
+
+
+
 @pytest.mark.parametrize('func', [example, to_rename])
 def test_good_commandline(capsys, func):
     """Verify the CLI for some valid command lines.
