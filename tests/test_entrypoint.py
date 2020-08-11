@@ -1,7 +1,7 @@
 from entrypoint.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, example, to_rename, tricky_1, hard, defaults, positional_by_keyword,
-    inverse_flag
+    empty, un_documented, example, to_rename, tricky_1, hard, defaults,
+    positional_by_keyword, inverse_flag
 )
 import pytest
 
@@ -33,8 +33,10 @@ def test_from_python():
     assert to_rename.entrypoint_desc == 'An example with custom labels.'
     assert tricky_1.entrypoint_name == 'renamed_1'
     assert tricky_1.entrypoint_desc == 'Overridden description'
-    assert empty.entrypoint_name is not None
-    assert empty.entrypoint_desc is not None
+    assert empty.entrypoint_name == 'empty'
+    assert empty.entrypoint_desc == ''
+    assert un_documented.entrypoint_name == 'un-documented'
+    assert un_documented.entrypoint_desc == ''
 
 
 def test_doc_examples(capsys):
@@ -62,7 +64,6 @@ def test_doc_examples(capsys):
 
 def test_empty_no_input(capsys):
     assert not _displayed(capsys, empty, '')
-
 
 
 @pytest.mark.parametrize('func', [example, to_rename])

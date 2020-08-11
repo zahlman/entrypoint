@@ -28,6 +28,12 @@ def empty():
     pass
 
 
+@entrypoint(description='')
+def un_documented():
+    """This text should be ignored and not used for documentation."""
+    pass
+
+
 @entrypoint(
     foo='the value for foo',
     bar='the value for bar',

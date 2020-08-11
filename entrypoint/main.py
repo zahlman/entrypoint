@@ -16,8 +16,11 @@ def _prepare_name(func, parser_args):
 
 
 def _prepare_description(func, parser_args):
-    doc_top = func.__doc__.splitlines()[0] if func.__doc__ else ''
-    description = parser_args.get('description', '') or doc_top
+    try:
+        description = parser_args['description']
+    except KeyError:
+        description = func.__doc__.splitlines()[0] if func.__doc__ else ''
+    assert isinstance(description, str), 'description must be a string'
     parser_args['description'] = func.entrypoint_desc = description
 
 
