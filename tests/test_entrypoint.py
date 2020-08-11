@@ -1,7 +1,7 @@
 from entrypoint.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, un_documented, example, to_rename, tricky_1, hard, defaults,
-    positional_by_keyword, inverse_flag
+    empty, un_documented, example, to_rename, tricky_1, custom_parser, hard,
+    defaults, positional_by_keyword, inverse_flag
 )
 import pytest
 
@@ -91,6 +91,10 @@ def test_help_commandlines(capsys, func, s):
     assert output[0].startswith(f'usage: {func.entrypoint_name}')
     assert output[1] == ''
     assert output[2] == func.entrypoint_desc
+
+
+def test_custom_parser(capsys):
+    assert _displayed(capsys, custom_parser, '') == ['hacked result']
 
 
 def test_hard(capsys):

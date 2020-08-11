@@ -1,5 +1,6 @@
 from argparse import SUPPRESS
-from . import entrypoint
+import sys
+from . import entrypoint, parser
 
 
 @entrypoint(arg='an argument')
@@ -68,12 +69,34 @@ def to_rename(foo, bar, baz):
     specs={'description': 'description', 'name': 'name'}
 )
 def tricky_1(description, name):
-    """Test the use of `param_specs` to disambiguate decorator arguments."""
+    """Test the use of `specs` to disambiguate decorator arguments."""
     pass
 
 
-# TODO: set up a test with a custom Parser that expects args with special
-# names, to verify that `parser_args` works properly.
+# This test ensures that a custom parser a) isn't forced to call the
+# underlying function at all; b) can receive a custom parameter. It also tests
+# the decorator's setup for disambiguating names.
+class TestParser(parser.DefaultParser):
+    @classmethod
+    def config_keys(cls):
+        return {'parser_class'}
+
+
+    def setup(self, config):
+        super().setup(config)
+        self._pc = config['parser_class']
+
+
+    def call_with(self, parsed_args):
+        print(self._pc)
+        sys.exit(0)
+
+
+@entrypoint(
+    parser_class=TestParser, parser_args={'parser_class': 'hacked result'}
+)
+def custom_parser():
+    raise ValueError('custom parser failed to prevent execution')
 
 
 @entrypoint(
