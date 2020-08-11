@@ -21,13 +21,19 @@ def _load_everything(qualname, ignore):
                     _load_everything(f'{qualname}.{fixed_name}', ignore)
 
 
-@main.entrypoint(name='entrypoint-update-metadata')
-def write_all():
+@main.entrypoint(
+    name='entrypoint-update-metadata',
+    _ignore={
+        'help': 'list of folder names not to recurse into',
+        'nargs': '*'
+    }
+)
+def write_all(ignore=('__pycache__',)):
     """Discover entry points in all source files and update pyproject.toml."""
     with open('pyproject.toml') as f:
         data = toml.load(f)
     poetry = data['tool']['poetry']
-    _load_everything(poetry['name'], ('__pycache__',))
+    _load_everything(poetry['name'], ignore)
     poetry['scripts'] = main._REGISTRY
     with open('pyproject.toml', 'w') as f:
         toml.dump(data, f)
