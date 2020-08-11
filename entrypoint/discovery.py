@@ -21,34 +21,19 @@ def _load_everything(qualname, ignore):
                     _load_everything(f'{qualname}.{fixed_name}', ignore)
 
 
-# This only works properly on a fresh run, where nothing has been cached yet.
-def _discover_entrypoints(qualname, convert, prefix, ignore=('__pycache__',)):
-    _load_everything(qualname, ignore)
-    return {
-        prefix + (k.replace('_', '-') if convert else k): v
-        for k, v in main._REGISTRY.items()
-    }
-
-
-@main.entrypoint(
-    name='update-metadata',
-    _keep_underscores={
-        'help': 'preserve underscores instead of converting to hyphens',
-        'action': 'store_false', 'dest': 'convert'
-    },
-    _prefix='text prefixed to all executable names'
-)
-def write_all(convert=True, prefix=''):
+@main.entrypoint(name='entrypoint-update-metadata')
+def write_all():
     """Discover entry points in all source files and update pyproject.toml."""
     with open('pyproject.toml') as f:
         data = toml.load(f)
     poetry = data['tool']['poetry']
-    poetry['scripts'] = _discover_entrypoints(poetry['name'], convert, prefix)
+    _load_everything(poetry['name'], ('__pycache__',))
+    poetry['scripts'] = main._REGISTRY
     with open('pyproject.toml', 'w') as f:
         toml.dump(data, f)
 
 
-@main.entrypoint(name='wrapper', cmd='name of command to wrap')
+@main.entrypoint(name='entrypoint-wrapper', cmd='name of command to wrap')
 def make_wrapper_script(cmd):
     """Create a wrapper that runs the specified command locally and pauses."""
     if os.name == 'nt':
