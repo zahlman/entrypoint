@@ -1,6 +1,6 @@
 from entrypoint.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, un_documented, example, to_rename, tricky_1, custom_parser, hard,
+    empty, un_documented, example, tricky_1, custom_parser, hard,
     defaults, positional_by_keyword, inverse_flag
 )
 import pytest
@@ -26,16 +26,13 @@ def test_from_python():
     """Verify that the functions still work normally
     and that they have the correct attributes set."""
     assert example(1, 2, 3) == 'foo=1, bar=2, baz=3'
-    assert example.entrypoint_name == 'example'
+    assert example.entrypoint_name == 'entrypoint-example'
     assert example.entrypoint_desc == 'An example entry point for testing.'
-    assert to_rename(1, 2, 3) == 'foo=1, bar=2, baz=3'
-    assert to_rename.entrypoint_name == 'renamed'
-    assert to_rename.entrypoint_desc == 'An example with custom labels.'
-    assert tricky_1.entrypoint_name == 'renamed_1'
+    assert tricky_1.entrypoint_name == 'entrypoint-renamed-1'
     assert tricky_1.entrypoint_desc == 'Overridden description'
-    assert empty.entrypoint_name == 'empty'
+    assert empty.entrypoint_name == 'entrypoint-empty'
     assert empty.entrypoint_desc == ''
-    assert un_documented.entrypoint_name == 'un-documented'
+    assert un_documented.entrypoint_name == 'entrypoint-un-documented'
     assert un_documented.entrypoint_desc == ''
 
 
@@ -66,31 +63,28 @@ def test_empty_no_input(capsys):
     assert not _displayed(capsys, empty, '')
 
 
-@pytest.mark.parametrize('func', [example, to_rename])
-def test_good_commandline(capsys, func):
+def test_good_commandline(capsys):
     """Verify the CLI for some valid command lines.
     We call the .invoke methods directly for all testing."""
-    assert _displayed(capsys, func, '4 5 6') == ['foo=4, bar=5, baz=6']
+    assert _displayed(capsys, example, '4 5 6') == ['foo=4, bar=5, baz=6']
 
 
-@pytest.mark.parametrize('func', [example, to_rename])
 @pytest.mark.parametrize('s', ['', '1', '1 2', '1 2 3 4'])
-def test_bad_commandlines(capsys, func, s):
+def test_bad_commandlines(capsys, s):
     """Verify that an invalid command line causes the program to exit
     and print correct information in a 'usage' message."""
-    output = _failed_with(capsys, func, s)
-    assert output[0].startswith(f'usage: {func.entrypoint_name}')
-    assert output[1].startswith(f'{func.entrypoint_name}: error:')
+    output = _failed_with(capsys, example, s)
+    assert output[0].startswith(f'usage: {example.entrypoint_name}')
+    assert output[1].startswith(f'{example.entrypoint_name}: error:')
 
 
-@pytest.mark.parametrize('func', [example, to_rename])
 @pytest.mark.parametrize('s', ['-h', '--help'])
-def test_help_commandlines(capsys, func, s):
+def test_help_commandlines(capsys, s):
     """Verify that automatic 'help' options work correctly."""
-    output = _displayed(capsys, func, s)
-    assert output[0].startswith(f'usage: {func.entrypoint_name}')
+    output = _displayed(capsys, example, s)
+    assert output[0].startswith(f'usage: {example.entrypoint_name}')
     assert output[1] == ''
-    assert output[2] == func.entrypoint_desc
+    assert output[2] == example.entrypoint_desc
 
 
 def test_custom_parser(capsys):
