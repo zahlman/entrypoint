@@ -30,8 +30,10 @@ def test_from_python():
     assert example.entrypoint_desc == 'An example entry point for testing.'
     assert tricky_1.entrypoint_name == 'entrypoint-renamed-1'
     assert tricky_1.entrypoint_desc == 'Overridden description'
+    assert empty() is None
     assert empty.entrypoint_name == 'entrypoint-empty'
     assert empty.entrypoint_desc == ''
+    assert un_documented() is None
     assert un_documented.entrypoint_name == 'entrypoint-un-documented'
     assert un_documented.entrypoint_desc == ''
 
