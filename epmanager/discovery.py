@@ -22,7 +22,7 @@ def _load_everything(qualname, ignore):
 
 
 @main.entrypoint(
-    name='entrypoint-update-metadata',
+    name='epmanager-update-metadata',
     _ignore={
         'help': 'list of folder names not to recurse into',
         'nargs': '*'
@@ -39,7 +39,7 @@ def write_all(ignore=('__pycache__',)):
         toml.dump(data, f)
 
 
-@main.entrypoint(name='entrypoint-wrapper', cmd='name of command to wrap')
+@main.entrypoint(name='epmanager-wrapper', cmd='name of command to wrap')
 def make_wrapper_script(cmd):
     """Create a wrapper that runs the specified command locally and pauses."""
     if os.name == 'nt':

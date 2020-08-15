@@ -1,4 +1,4 @@
-from entrypoint.examples import (
+from epmanager.examples import (
     doc_example_1, doc_example_2, doc_example_3, doc_example_4,
     empty, un_documented, example, tricky_1, custom_parser, hard,
     defaults, positional_by_keyword, inverse_flag
@@ -26,15 +26,15 @@ def test_from_python():
     """Verify that the functions still work normally
     and that they have the correct attributes set."""
     assert example(1, 2, 3) == 'foo=1, bar=2, baz=3'
-    assert example.entrypoint_name == 'entrypoint-example'
+    assert example.entrypoint_name == 'epmanager-example'
     assert example.entrypoint_desc == 'An example entry point for testing.'
-    assert tricky_1.entrypoint_name == 'entrypoint-renamed-1'
+    assert tricky_1.entrypoint_name == 'epmanager-renamed-1'
     assert tricky_1.entrypoint_desc == 'Overridden description'
     assert empty() is None
-    assert empty.entrypoint_name == 'entrypoint-empty'
+    assert empty.entrypoint_name == 'epmanager-empty'
     assert empty.entrypoint_desc == ''
     assert un_documented() is None
-    assert un_documented.entrypoint_name == 'entrypoint-un-documented'
+    assert un_documented.entrypoint_name == 'epmanager-un-documented'
     assert un_documented.entrypoint_desc == ''
 
 

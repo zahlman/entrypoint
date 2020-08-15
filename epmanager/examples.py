@@ -4,7 +4,7 @@ from . import entrypoint, parser
 
 
 def my_entrypoint(**kwargs):
-    kwargs.setdefault('name', 'entrypoint-{name}')
+    kwargs.setdefault('name', 'epmanager-{name}')
     return entrypoint(**kwargs)
 
 
@@ -58,7 +58,7 @@ def example(foo, bar, baz):
 
 
 @my_entrypoint(
-    description='Overridden description', name='entrypoint-renamed-1',
+    description='Overridden description', name='epmanager-renamed-1',
     specs={'description': 'description', 'name': 'name'}
 )
 def tricky_1(description, name):
