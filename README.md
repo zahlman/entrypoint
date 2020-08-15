@@ -1,8 +1,8 @@
-# `entrypoint` - quick and easy entry points for Python packages
+# `epmanager` - quick and easy entry points for Python packages
 
 ## Purpose and contents
 
-This package provides tools to help you create entry points for your Python code. Unlike other tools, the focus is on packages prepared and distributed in the modern way, rather than on replacing the `if __name__=='__main__':` block in one-off scripts. To this end, `entrypoint` provides:
+This package provides tools to help you create entry points for your Python code. Unlike other tools, the focus is on packages prepared and distributed in the modern way, rather than on replacing the `if __name__=='__main__':` block in one-off scripts. To this end, `epmanager` provides:
 
 * A function decorator that creates a wrapper suitable for use as an entry point to your program, and attaches it as an attribute to the function. The intent is that your original API is untouched, while still producing an effective way to start using your code right from the command line.
 
@@ -10,21 +10,21 @@ This package provides tools to help you create entry points for your Python code
 
 * A command-line tool to create shortcut scripts for the entry point executables created during installation. This makes it easier to run your code, for example, from the desktop in a graphical environment, by providing something double-clickable that runs with the desktop as working directory.
 
-* The code examples in this documentation are also made available as entry points. The function `doc_example_1` is available to use on the command line as `entrypoint-doc-example-1`, and so on.
+* A full suite of examples. In particular, the code examples in the documentation are made available as command-line entry points, as if you had set them up yourself. For example, the function `epmanager_example_1` below is available to use on the command line as `epmanager-example-1`. The `examples` module contains these examples and more; the corresponding command-line names for other functions (aside from the ones explicitly discussed here) are prefixed with `epmanager-`.
 
 ## The `@entrypoint` decorator - Basic Usage
 
-To create an entry point to your code, simply import the decorator (`from entrypoint import entrypoint`), and then decorate the function that should serve as the entry point to your code. A simple example:
+To create an entry point to your code, simply import the decorator (`from epmanager import entrypoint`), and then decorate the function that should serve as the entry point to your code. A simple example:
 
 ```python
 @entrypoint(arg='an argument')
-def doc_example_1(arg:int):
+def epmanager_example_1(arg:int):
     return f'arg={arg} of type {type(arg)}'
 ```
 
-The decorator creates a wrapper that will parse the command line expecting a single, integer argument aside from the program name, like: `entrypoint-doc-example-1 3`. It knows that the parameter should be an integer because it inspects the signature of `doc_example_1` and uses the type annotation. When invalid input is received, `doc_example_1` will not be called, and an error message will be displayed.
+The decorator creates a wrapper that will parse the command line expecting a single, integer argument aside from the program name, like: `epmanager-example-1 3`. It knows that the parameter should be an integer because it inspects the signature of `doc_example_1` and uses the type annotation. When invalid input is received, `doc_example_1` will not be called, and an error message will be displayed.
 
-By default, `entrypoint` makes use of `argparse` default settings, so you also can use `entrypoint-doc-example-1 -h` to see a help message. The text `'an argument'` will be used to describe the `arg` command-line argument in error and help messages.
+By default, the decorator makes use of `argparse` default settings, so you also can use `epmanager-example-1 -h` to see a help message. The text `'an argument'` will be used to describe the `arg` command-line argument in error and help messages.
 
 When valid input is received, the function will be called; the returned string will be printed; and the process will exit successfully. If the function were to raise an exception somehow, the exception (not a traceback) would be displayed on stderr, and the process would exit with a non-zero status code.
 
@@ -32,7 +32,7 @@ When valid input is received, the function will be called; the returned string w
 
 The decorator requires parentheses and accepts only keyword arguments. In the basic usage, each keyword argument corresponds to one of the parameters of the function. We'll call these arguments *parameter specifications*. Such an argument can be either a string or a dict; a given string `s` is treated equivalently to a dict `{'help': s}`.
 
-With the default settings, an `argparse.ArgumentParser` is created to parse the command-line arguments, and each parameter specification is used for an `.add_argument` call. This allows you to specify arguments explicitly, but `entrypoint` will also make some inferences for you:
+With the default settings, an `argparse.ArgumentParser` is created to parse the command-line arguments, and each parameter specification is used for an `.add_argument` call. This allows you to specify arguments explicitly, but the `@entrypoint` decorator will also make some inferences for you:
 
 * As described above, type annotations can be used to determine parameter type. Specifically, if an annotation exists and is callable, it is used as a `type` parameter for the `.add_argument` call.
 
@@ -48,11 +48,11 @@ Here is an example showing the use of a dict as a parameter specification, and a
 
 ```python
 @entrypoint(_fancy={'help': 'fancy help', 'type': int})
-def doc_example_3(fancy):
+def epmanager_example_2(fancy):
     return f'This is a fancy way to end up with {fancy} (of type {type(fancy)})'
 ```
 
-The `'help'` key specifies the description of the `fancy` command-line argument that will appear in the usage message.  Since the parameter specification name starts with an underscore, the command has a `-f` or `--fancy` option. Since the underlying parameter has no default value and none was explicitly specified, the option is mandatory on the command line: `entrypoint-doc-example-3 -f 1`. Although there is no type annotation on the `fancy` parameter, the explicitly provided `'type'` setting will mandate an integer value.
+The `'help'` key specifies the description of the `fancy` command-line argument that will appear in the usage message.  Since the parameter specification name starts with an underscore, the command has a `-f` or `--fancy` option. Since the underlying parameter has no default value and none was explicitly specified, the option is mandatory on the command line: `epmanager-example-2 -f 1`. Although there is no type annotation on the `fancy` parameter, the explicitly provided `'type'` setting will mandate an integer value.
 
 ### Effect of the decorator
 
@@ -62,7 +62,7 @@ The decorator assigns three attributes to the function:
 
 * `.entrypoint_name` - normally a copy of the `.__name__` of the function, but it can be overridden.
 
-* `.entrypoint_desc` - documentation for the entry point. By default, this is taken from the first line of the function's `.__doc__`, if any; but it can also be overridden.
+* `.entrypoint_desc` - documentation for the entry point. By default, this is taken from the first line of the function's `.__doc__`, if any; but it can also be overridden. It will be set to an empty string when no documentation is available; it will *not* be `None`.
 
 ### Using the parsed values in the function
 
@@ -74,7 +74,7 @@ For example:
 
 ```python
 @entrypoint(arg='a normal argument', kwargs='a tricky argument')
-def doc_example_2(**kwargs):
+def epmanager_example_3(**kwargs):
     return f"kwargs['arg']={kwargs['arg']}, kwargs['kwargs']={kwargs['kwargs']}"
 ```
 
@@ -84,11 +84,11 @@ A command-line argument having the same name as a `*args` function parameter wil
 
 ```python
 @entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
-def doc_example_4(*args):
+def epmanager_example_4(*args):
     return f'Finally, a test of variable positional arguments: {args}'
 ```
 
-The `args` command-line argument will read zero or more integer values and store them in a list, which is then splatted out to the `*args` function parameter. We might for example run `entrypoint-doc-example-4 1 2 3` and see a result `Finally, a test of variable positional arguments: (1, 2, 3)`. A call like `doc_example_4(**{'args': [1, 2, 3]})` would fail with a TypeError, so the implementation has to do some more processing to make this work - and in the process, it adds several sanity checks.
+The `args` command-line argument will read zero or more integer values and store them in a list, which is then splatted out to the `*args` function parameter. We might for example run `epmanager-example-4 1 2 3` and see a result `Finally, a test of variable positional arguments: (1, 2, 3)`. A call like `epmanager_example_4(**{'args': [1, 2, 3]})` would fail with a TypeError, so the implementation has to do some more processing to make this work - and in the process, it adds several sanity checks.
 
 ## Advanced usage
 
@@ -153,7 +153,7 @@ This should parse the provided command line (provided as a list of tokens, such 
 def config_keys(cls) -> set
 ```
 
-If you override this, it provides keyword names that the `entrypoint` decorator will use for configuration options, rather than for parameter specifications. By default, it returns an empty set; but note that `name` and `description` are hard-coded to appear in the configuration options anyway.
+If you override this, it provides keyword names that the `@entrypoint` decorator will use for configuration options, rather than for parameter specifications. By default, it returns an empty set; but note that `name` and `description` are hard-coded to appear in the configuration options anyway.
 
 ```python
 def call_with(self, parsed_args:dict):
@@ -207,13 +207,13 @@ As described at the top, there are several command-line entry points provided by
 
 ### Discovery tool for entry points
 
-In your main project directory, run `entrypoint-update-metadata` (no arguments). It discovers uses of the `@entrypoint` decorator by recursively searching for `.py` files, dynamically importing each of them separately, and then seeing what ens up in the private registry of decorated functions. For each entry point, an appropriate line is written in the `tool.poetry.scripts` section of your `pyproject.toml` (TODO: support build systems other than Poetry).
+In your main project directory, run `epmanager-update-metadata` (no arguments). It discovers uses of the `@entrypoint` decorator by recursively searching for `.py` files, dynamically importing each of them separately, and then seeing what ens up in the private registry of decorated functions. For each entry point, an appropriate line is written in the `tool.poetry.scripts` section of your `pyproject.toml` (TODO: support build systems other than Poetry).
 
-The tool is, of course, used for this package's own `pyproject.toml`.
+The tool is, of course, used to maintain this package's own `pyproject.toml`.
 
 ### Wrapper creation
 
-After installing your package (probably in editable mode), run `entrypoint-wrapper <name of entry point>` to create a wrapper .bat file or shell script (NOTE: while the platform is detected using `os.name`, this has not been tested on a non-Windows system) in the current directory. This is useful because it:
+After installing your package (probably in editable mode), run `epmanager-wrapper <name of entry point>` to create a wrapper .bat file or shell script (NOTE: while the platform is detected using `os.name`, this has not been tested on a non-Windows system) in the current directory. This is useful because it:
 
 * provides a double-clickable shortcut;
 * which opens a terminal window when double-clicked and keeps it open after the program has finished running (waiting for one more keypress);
