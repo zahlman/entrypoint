@@ -104,11 +104,26 @@ While the decorator generally treats keyword arguments as parameter specificatio
 
 * `parser_args` - a dict used for disambiguation; key-value pairs here will be treated as configuration arguments for the parser class, regardless of their names. This allows you to, for example, have a custom parser class that expects a configuration argument called `specs` (although it's unclear why you'd want to do this).
 
-* `name` - a replacement name for the command (overriding the default, which is to use the function's name).
+* `name` - a template used to determine the command's name. By default, the function's name is used, except that underscores are replaced with hyphens. The template is a string suitable for use with the built-in `.format` method of strings. Two keyword arguments (and no positional arguments) are passed when making the `.format` call:
+
+    * `name`: the function's name, with underscores replaced with hyphens.
+
+    * `_name`: the function's name, without such replacement.
 
 * `description` - a replacement description for the command (overriding the default, which is to use the first line of the function's doc, or an empty string).
 
 Any other keywords are treated as configuration arguments if they appear in a whitelist provided by the parser class, and parameter specifications otherwise.
+
+You can use a helper function to wrap the decorator call and provide default arguments to be used for several entry points. The `examples` module demonstrates this technique:
+
+```python
+def my_entrypoint(**kwargs):
+    kwargs.setdefault('name', 'epmanager-{name}')
+    return entrypoint(**kwargs)
+```
+
+Now functions decorated using `@my_entrypoint` will be entry points as before, but with the name template overridden. The `epmanager` packages uses this to prefix the names of commands corresponding to the other examples listed in the module. (These are also used internally for testing.) For example, `entrypoint-empty`at the command line runs the `empty` function (which, of course, does nothing).
+
 
 ### The Parser API
 

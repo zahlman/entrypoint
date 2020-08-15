@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "epmanager"
-version = "0.6.0+64"
+version = "0.7.0+77"
 description = ""
 authors = [ "Karl Knechtel <karl.a.knechtel@gmail.com>",]
 
