@@ -3,29 +3,31 @@ import sys
 from . import entrypoint, parser
 
 
-def my_entrypoint(**kwargs):
-    kwargs.setdefault('name', 'epmanager-{name}')
-    return entrypoint(**kwargs)
-
-
-@my_entrypoint(arg='an argument')
-def doc_example_1(arg:int):
+@entrypoint(arg='an argument')
+def epmanager_example_1(arg:int):
     return f'arg={arg} of type {type(arg)}'
 
 
-@my_entrypoint(arg='a normal argument', kwargs='a tricky argument')
-def doc_example_2(**kwargs):
+@entrypoint(arg='a normal argument', kwargs='a tricky argument')
+def epmanager_example_2(**kwargs):
     return f"kwargs['arg']={kwargs['arg']}, kwargs['kwargs']={kwargs['kwargs']}"
 
 
-@my_entrypoint(_fancy={'help': 'fancy help', 'type': int})
-def doc_example_3(fancy):
+@entrypoint(_fancy={'help': 'fancy help', 'type': int})
+def epmanager_example_3(fancy):
     return f'This is a fancy way to end up with {fancy} (of type {type(fancy)})'
 
 
-@my_entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
-def doc_example_4(*args):
+@entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
+def epmanager_example_4(*args):
     return f'Finally, a test of variable positional arguments: {args}'
+
+
+# For examples not explicitly referenced in the doc, use a special decorator
+# to prefix the command names.
+def my_entrypoint(**kwargs):
+    kwargs.setdefault('name', 'epmanager-{name}')
+    return entrypoint(**kwargs)
 
 
 # The computed description should always be a string, not None.

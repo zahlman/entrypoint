@@ -1,7 +1,7 @@
 from epmanager.examples import (
-    doc_example_1, doc_example_2, doc_example_3, doc_example_4,
-    empty, un_documented, example, tricky_1, custom_parser, hard,
-    defaults, positional_by_keyword, inverse_flag
+    epmanager_example_1, epmanager_example_2, epmanager_example_3,
+    epmanager_example_4, empty, un_documented, example, tricky_1,
+    custom_parser, hard, defaults, positional_by_keyword, inverse_flag
 )
 import pytest
 
@@ -41,22 +41,24 @@ def test_from_python():
 def test_doc_examples(capsys):
     """Verify the examples given in the documentation, with proper input.
     We don't bother checking the printed output, just the returned values."""
-    assert _displayed(capsys, doc_example_1, '1') == [
+    assert _displayed(capsys, epmanager_example_1, '1') == [
         "arg=1 of type <class 'int'>"
     ]
-    assert _displayed(capsys, doc_example_2, '--arg=normal -k tricky') == [
+    assert _displayed(
+        capsys, epmanager_example_2, '--arg=normal -k tricky'
+    ) == [
         "kwargs['arg']=normal, kwargs['kwargs']=tricky"
     ]
-    assert _displayed(capsys, doc_example_3, '--fancy=1') == [
+    assert _displayed(capsys, epmanager_example_3, '--fancy=1') == [
         "This is a fancy way to end up with 1 (of type <class 'int'>)"
     ]
-    assert _displayed(capsys, doc_example_3, '') == [
+    assert _displayed(capsys, epmanager_example_3, '') == [
         "This is a fancy way to end up with None (of type <class 'NoneType'>)"
     ]
-    assert _displayed(capsys, doc_example_4, '1 2 3') == [
+    assert _displayed(capsys, epmanager_example_4, '1 2 3') == [
         'Finally, a test of variable positional arguments: (1, 2, 3)'
     ]
-    assert _displayed(capsys, doc_example_4, '') == [
+    assert _displayed(capsys, epmanager_example_4, '') == [
         'Finally, a test of variable positional arguments: ()'
     ]
 
