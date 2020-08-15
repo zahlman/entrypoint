@@ -44,16 +44,16 @@ def test_doc_examples(capsys):
     assert _displayed(capsys, epmanager_example_1, '1') == [
         "arg=1 of type <class 'int'>"
     ]
-    assert _displayed(
-        capsys, epmanager_example_2, '--arg=normal -k tricky'
-    ) == [
-        "kwargs['arg']=normal, kwargs['kwargs']=tricky"
-    ]
-    assert _displayed(capsys, epmanager_example_3, '--fancy=1') == [
+    assert _displayed(capsys, epmanager_example_2, '--fancy=1') == [
         "This is a fancy way to end up with 1 (of type <class 'int'>)"
     ]
-    assert _displayed(capsys, epmanager_example_3, '') == [
+    assert _displayed(capsys, epmanager_example_2, '') == [
         "This is a fancy way to end up with None (of type <class 'NoneType'>)"
+    ]
+    assert _displayed(
+        capsys, epmanager_example_3, '--arg=normal -k tricky'
+    ) == [
+        "kwargs['arg']=normal, kwargs['kwargs']=tricky"
     ]
     assert _displayed(capsys, epmanager_example_4, '1 2 3') == [
         'Finally, a test of variable positional arguments: (1, 2, 3)'

@@ -8,14 +8,14 @@ def epmanager_example_1(arg:int):
     return f'arg={arg} of type {type(arg)}'
 
 
-@entrypoint(arg='a normal argument', kwargs='a tricky argument')
-def epmanager_example_2(**kwargs):
-    return f"kwargs['arg']={kwargs['arg']}, kwargs['kwargs']={kwargs['kwargs']}"
-
-
 @entrypoint(_fancy={'help': 'fancy help', 'type': int})
-def epmanager_example_3(fancy):
+def epmanager_example_2(fancy):
     return f'This is a fancy way to end up with {fancy} (of type {type(fancy)})'
+
+
+@entrypoint(arg='a normal argument', kwargs='a tricky argument')
+def epmanager_example_3(**kwargs):
+    return f"kwargs['arg']={kwargs['arg']}, kwargs['kwargs']={kwargs['kwargs']}"
 
 
 @entrypoint(args={'nargs': '*', 'type': int, 'help': 'values'})
