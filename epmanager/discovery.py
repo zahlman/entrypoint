@@ -33,6 +33,7 @@ def write_all(ignore=('__pycache__',)):
     with open('pyproject.toml') as f:
         data = toml.load(f)
     poetry = data['tool']['poetry']
+    main._REGISTRY = {}
     _load_everything(poetry['name'], ignore)
     poetry['scripts'] = main._REGISTRY
     with open('pyproject.toml', 'w') as f:
