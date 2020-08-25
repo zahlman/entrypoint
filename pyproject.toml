@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "epmanager"
-version = "0.7.3+80"
+version = "0.7.4"
 description = "An entry-point management system for projects using Poetry"
 license = "MIT"
 authors = [ "Karl Knechtel <karl.a.knechtel@gmail.com>",]
@@ -14,7 +14,7 @@ repository = "https://github.com/zahlman/epmanager"
 documentation = "https://github.com/zahlman/epmanager"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.6"
 toml = "^0.10.1"
 
 [tool.poetry.dev-dependencies]
